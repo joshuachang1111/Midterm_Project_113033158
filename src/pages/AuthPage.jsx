@@ -41,24 +41,26 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-600 via-purple-600 to-blue-500 p-4">
-      <div className="w-full max-w-md bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E8D5B7] via-[#F5ECD7] to-[#FAF7F2] p-4">
+      <div className="w-full max-w-md bg-white/70 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-[#E8D5B7]">
 
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="text-5xl mb-2">💬</div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Chatroom</h1>
-          <p className="text-white/60 text-sm mt-1">Connect with people around you</p>
+          <h1 className="text-3xl font-bold text-[#2C2825] tracking-tight">Chatroom</h1>
+          <p className="text-[#A89880] text-sm mt-1">Connect with people around you</p>
         </div>
 
         {/* Tabs */}
-        <div className="flex bg-white/10 rounded-2xl p-1 mb-6">
+        <div className="flex bg-[#F5ECD7] rounded-2xl p-1 mb-6">
           {["login", "register"].map((t) => (
             <button
               key={t}
               onClick={() => { setTab(t); setError(""); }}
               className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all duration-200
-                ${tab === t ? "bg-white text-purple-600 shadow" : "text-white/70 hover:text-white"}`}
+                ${tab === t
+                  ? "bg-[#2C2825] text-white shadow"
+                  : "text-[#A89880] hover:text-[#2C2825]"}`}
             >
               {t === "login" ? "Sign In" : "Sign Up"}
             </button>
@@ -68,36 +70,36 @@ export default function AuthPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-white/80 text-sm font-medium block mb-1">Email</label>
+            <label className="text-[#2C2825] text-sm font-medium block mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40"
+              className="w-full bg-white border border-[#E8D5B7] rounded-xl px-4 py-3 text-[#2C2825] placeholder-[#A89880] focus:outline-none focus:ring-2 focus:ring-[#C8956C]/30"
             />
           </div>
           <div>
-            <label className="text-white/80 text-sm font-medium block mb-1">Password</label>
+            <label className="text-[#2C2825] text-sm font-medium block mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40"
+              className="w-full bg-white border border-[#E8D5B7] rounded-xl px-4 py-3 text-[#2C2825] placeholder-[#A89880] focus:outline-none focus:ring-2 focus:ring-[#C8956C]/30"
             />
           </div>
 
           {error && (
-            <p className="text-red-300 text-sm bg-red-500/10 rounded-xl px-4 py-2">{error}</p>
+            <p className="text-red-400 text-sm bg-red-50 rounded-xl px-4 py-2">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-white text-purple-600 font-bold py-3 rounded-xl hover:bg-white/90 transition-all duration-200 shadow-lg disabled:opacity-50"
+            className="w-full bg-[#2C2825] text-white font-bold py-3 rounded-xl hover:bg-[#3D3530] transition-all duration-200 shadow-lg disabled:opacity-50"
           >
             {loading ? "Loading..." : tab === "login" ? "Sign In" : "Create Account"}
           </button>
@@ -105,15 +107,15 @@ export default function AuthPage() {
 
         {/* Divider */}
         <div className="flex items-center gap-3 my-5">
-          <div className="flex-1 h-px bg-white/20" />
-          <span className="text-white/40 text-sm">or</span>
-          <div className="flex-1 h-px bg-white/20" />
+          <div className="flex-1 h-px bg-[#E8D5B7]" />
+          <span className="text-[#A89880] text-sm">or</span>
+          <div className="flex-1 h-px bg-[#E8D5B7]" />
         </div>
 
         {/* Google */}
         <button
           onClick={handleGoogle}
-          className="w-full flex items-center justify-center gap-3 bg-white/10 border border-white/20 text-white font-semibold py-3 rounded-xl hover:bg-white/20 transition-all duration-200"
+          className="w-full flex items-center justify-center gap-3 bg-white border border-[#E8D5B7] text-[#2C2825] font-semibold py-3 rounded-xl hover:bg-[#F5ECD7] transition-all duration-200"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
