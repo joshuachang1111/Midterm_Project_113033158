@@ -46,7 +46,10 @@ export default function ChatPage() {
         selectedChatId={selectedChatId}
         profile={profile}
       />
-      <ChatArea selectedChatId={selectedChatId} />
+      <ChatArea
+        selectedChatId={selectedChatId}
+        onChatLeft={() => setSelectedChatId(null)}
+      />
 
       {(forceProfile || showProfile) && (
         <ProfileModal

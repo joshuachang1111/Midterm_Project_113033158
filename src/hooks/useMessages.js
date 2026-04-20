@@ -50,3 +50,15 @@ export async function sendMessage(chatroomId, senderId, text, members) {
     ...unreadUpdate,
   });
 }
+
+export async function sendSystemMessage(chatroomId, text) {
+  await addDoc(collection(db, "chatrooms", chatroomId, "messages"), {
+    type: "system",
+    text,
+    timestamp: serverTimestamp(),
+  });
+  await updateDoc(doc(db, "chatrooms", chatroomId), {
+    lastMessage: text,
+    lastMessageAt: serverTimestamp(),
+  });
+}
