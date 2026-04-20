@@ -5,6 +5,8 @@ import { useChats } from "../../hooks/useChats";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 
+const DEFAULT_AVATAR = "https://res.cloudinary.com/dynzpaa0u/image/upload/v1776656443/default-avatar_vmy7o0.jpg";
+
 function ChatItem({ chat, currentUid, isSelected, onClick }) {
   const [otherUser, setOtherUser] = useState(null);
 
@@ -46,7 +48,7 @@ function ChatItem({ chat, currentUid, isSelected, onClick }) {
   );
 }
 
-export default function ChatList({ onSelectChat, selectedChatId }) {
+export default function ChatList({ onSelectChat, selectedChatId, profile }) {
   const { currentUser } = useAuth();
   const { chats, loading } = useChats(currentUser?.uid);
   const [searchQuery, setSearchQuery] = useState("");
@@ -106,11 +108,21 @@ export default function ChatList({ onSelectChat, selectedChatId }) {
         ))}
       </div>
 
+      {/* 底部改顯示頭像、username、userId */}
       <div className="px-4 py-3 border-t border-[#E8E0D0] flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-[#C8956C] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-          {currentUser?.email?.[0]?.toUpperCase()}
+        <img
+          src={profile?.photoURL || DEFAULT_AVATAR}
+          alt=""
+          className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-[#E8D5B7]"
+        />
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-[#2C2825] truncate">
+            {profile?.username || currentUser?.email}
+          </p>
+          <p className="text-xs text-[#A89880] truncate">
+            {profile?.userId ? `@${profile.userId}` : ""}
+          </p>
         </div>
-        <p className="text-xs text-[#A89880] truncate">{currentUser?.email}</p>
       </div>
     </div>
   );

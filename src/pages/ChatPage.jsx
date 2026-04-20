@@ -41,7 +41,11 @@ export default function ChatPage() {
   return (
     <div className="h-screen flex overflow-hidden bg-[#FAF7F2]">
       <IconBar activePanel={activePanel} setActivePanel={handleIconClick} />
-      <ChatList onSelectChat={setSelectedChatId} selectedChatId={selectedChatId} />
+      <ChatList
+        onSelectChat={setSelectedChatId}
+        selectedChatId={selectedChatId}
+        profile={profile}
+      />
       <ChatArea selectedChatId={selectedChatId} />
 
       {(forceProfile || showProfile) && (

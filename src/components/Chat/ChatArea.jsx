@@ -15,19 +15,22 @@ export default function ChatArea({ selectedChatId }) {
   const { currentUser } = useAuth();
   const { messages, loading } = useMessages(selectedChatId);
   const [otherUser, setOtherUser] = useState(null);
+  const [members, setMembers] = useState([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef();
   const textareaRef = useRef();
 
-  // 取得對方資料
   useEffect(() => {
     if (!selectedChatId) return;
+    setOtherUser(null);
+    setMembers([]);
     const fetchOther = async () => {
       const chatSnap = await getDoc(doc(db, "chatrooms", selectedChatId));
       if (!chatSnap.exists()) return;
-      const members = chatSnap.data().members;
-      const otherUid = members.find(m => m !== currentUser.uid);
+      const chatMembers = chatSnap.data().members;
+      setMembers(chatMembers);
+      const otherUid = chatMembers.find(m => m !== currentUser.uid);
       if (!otherUid) return;
       const userSnap = await getDoc(doc(db, "users", otherUid));
       if (userSnap.exists()) setOtherUser(userSnap.data());
@@ -35,15 +38,19 @@ export default function ChatArea({ selectedChatId }) {
     fetchOther();
   }, [selectedChatId, currentUser.uid]);
 
-  // 自動捲到底部
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    if (!selectedChatId || !currentUser?.uid) return;
+    markAsRead(selectedChatId, currentUser.uid);
+  }, [selectedChatId, currentUser?.uid]);
+
   async function handleSend() {
     if (!text.trim() || sending) return;
     setSending(true);
-    await sendMessage(selectedChatId, currentUser.uid, text);
+    await sendMessage(selectedChatId, currentUser.uid, text, members);
     setText("");
     setSending(false);
     textareaRef.current?.focus();
@@ -55,12 +62,6 @@ export default function ChatArea({ selectedChatId }) {
       handleSend();
     }
   }
-
-  // 點進聊天室時標記已讀
-  useEffect(() => {
-    if (!selectedChatId || !currentUser?.uid) return;
-    markAsRead(selectedChatId, currentUser.uid);
-  }, [selectedChatId, currentUser?.uid]);
 
   if (!selectedChatId) {
     return (
@@ -114,12 +115,10 @@ export default function ChatArea({ selectedChatId }) {
 
           return (
             <div key={msg.id}>
-              {/* 對方訊息（左） */}
               {!isMe && (
-                <div className={`flex items-end gap-2 ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
-                  {/* 頭像：只在群組最後一則顯示，其他空白佔位 */}
+                <div className={`flex items-start gap-2 ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
                   <div className="w-8 flex-shrink-0">
-                    {isLastInGroup ? (
+                    {isFirstInGroup ? (
                       <img
                         src={otherUser?.photoURL}
                         alt=""
@@ -130,8 +129,8 @@ export default function ChatArea({ selectedChatId }) {
                   <div className="max-w-[60%]">
                     <div className={`bg-white text-[#2C2825] px-4 py-2.5 shadow-sm text-sm
                       ${isFirstInGroup && isLastInGroup ? "rounded-2xl" :
-                        isFirstInGroup ? "rounded-2xl rounded-bl-md" :
-                        isLastInGroup ? "rounded-2xl rounded-tl-md" :
+                        isFirstInGroup ? "rounded-2xl rounded-tl-md" :
+                        isLastInGroup ? "rounded-2xl rounded-bl-md" :
                         "rounded-2xl rounded-l-md"}`}>
                       {msg.text}
                     </div>
@@ -144,7 +143,6 @@ export default function ChatArea({ selectedChatId }) {
                 </div>
               )}
 
-              {/* 自己的訊息（右） */}
               {isMe && (
                 <div className={`flex items-end justify-end gap-2 ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
                   <div className="max-w-[60%]">
@@ -175,7 +173,11 @@ export default function ChatArea({ selectedChatId }) {
           <textarea
             ref={textareaRef}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              e.target.style.height = "44px";
+              e.target.style.height = e.target.scrollHeight + "px";
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             rows={1}

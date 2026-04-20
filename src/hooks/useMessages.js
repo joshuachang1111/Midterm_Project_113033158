@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   collection, query, orderBy, onSnapshot,
-  addDoc, serverTimestamp, doc, updateDoc
+  addDoc, serverTimestamp, doc, updateDoc, increment
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 
@@ -17,7 +17,7 @@ export function useMessages(chatroomId) {
       orderBy("timestamp", "asc")
     );
     const unsub = onSnapshot(q, (snap) => {
-      setMessages(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
     return unsub;
@@ -26,7 +26,7 @@ export function useMessages(chatroomId) {
   return { messages, loading };
 }
 
-export async function sendMessage(chatroomId, senderId, text) {
+export async function sendMessage(chatroomId, senderId, text, members) {
   const trimmed = text.trim();
   if (!trimmed) return;
 
@@ -37,8 +37,16 @@ export async function sendMessage(chatroomId, senderId, text) {
     timestamp: serverTimestamp(),
   });
 
+  const unreadUpdate = {};
+  members.forEach(uid => {
+    if (uid !== senderId) {
+      unreadUpdate[`unreadCount.${uid}`] = increment(1);
+    }
+  });
+
   await updateDoc(doc(db, "chatrooms", chatroomId), {
     lastMessage: trimmed,
     lastMessageAt: serverTimestamp(),
+    ...unreadUpdate,
   });
 }
