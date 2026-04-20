@@ -3,6 +3,7 @@ import IconBar from "../components/Sidebar/IconBar";
 import ChatList from "../components/Sidebar/ChatList";
 import ChatArea from "../components/Chat/ChatArea";
 import ProfileModal from "../components/Profile/ProfileModal";
+import NewChatModal from "../components/Chat/NewChatModal";
 import { useAuth } from "../context/AuthContext";
 import { useUserProfile } from "../hooks/useUserProfile";
 
@@ -12,12 +13,14 @@ export default function ChatPage() {
   const [activePanel, setActivePanel] = useState("chats");
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [showNewChat, setShowNewChat] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
 
   const forceProfile = !loading && !profile && !profileSaved;
 
   function handleIconClick(id) {
     if (id === "profile") { setShowProfile(true); return; }
+    if (id === "new") { setShowNewChat(true); return; }
     setActivePanel(id);
   }
 
@@ -46,6 +49,16 @@ export default function ChatPage() {
           forceOpen={forceProfile}
           initialData={profile}
           onClose={handleProfileClose}
+        />
+      )}
+
+      {showNewChat && (
+        <NewChatModal
+          onClose={() => setShowNewChat(false)}
+          onChatCreated={(chatId) => {
+            setSelectedChatId(chatId);
+            setShowNewChat(false);
+          }}
         />
       )}
     </div>

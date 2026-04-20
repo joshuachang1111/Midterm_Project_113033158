@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { checkUserIdAvailable, saveUserProfile } from "../../hooks/useUserProfile";
 
+const DEFAULT_AVATAR = "https://res.cloudinary.com/dynzpaa0u/image/upload/v1776656443/default-avatar_vmy7o0.jpg";
+
 export default function ProfileModal({ onClose, forceOpen = false, initialData = null }) {
   const { currentUser } = useAuth();
   const fileInputRef = useRef();
@@ -10,15 +12,25 @@ export default function ProfileModal({ onClose, forceOpen = false, initialData =
   const [userId, setUserId] = useState(initialData?.userId || "");
   const [phone, setPhone] = useState(initialData?.phone || "");
   const [address, setAddress] = useState(initialData?.address || "");
-  const [photoURL, setPhotoURL] = useState(initialData?.photoURL || "/default-avatar.jpg");
+  const [photoURL, setPhotoURL] = useState(initialData?.photoURL || DEFAULT_AVATAR);
   const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(initialData?.photoURL || "/default-avatar.jpg");
+  const [photoPreview, setPhotoPreview] = useState(initialData?.photoURL || DEFAULT_AVATAR);
 
-  const [userIdStatus, setUserIdStatus] = useState(null); // null | "checking" | "available" | "taken" | "invalid"
+  const [userIdStatus, setUserIdStatus] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // userId 即時驗證
+  useEffect(() => {
+    if (initialData) {
+      setUsername(initialData.username || "");
+      setUserId(initialData.userId || "");
+      setPhone(initialData.phone || "");
+      setAddress(initialData.address || "");
+      setPhotoURL(initialData.photoURL || DEFAULT_AVATAR);
+      setPhotoPreview(initialData.photoURL || DEFAULT_AVATAR);
+    }
+  }, [initialData]);
+
   useEffect(() => {
     if (!userId) { setUserIdStatus(null); return; }
     const valid = /^[a-zA-Z0-9_]+$/.test(userId);
@@ -31,18 +43,6 @@ export default function ProfileModal({ onClose, forceOpen = false, initialData =
     }, 600);
     return () => clearTimeout(timer);
   }, [userId, currentUser.uid]);
-
-  // 當 initialData 載入進來時，更新欄位
-useEffect(() => {
-  if (initialData) {
-    setUsername(initialData.username || "");
-    setUserId(initialData.userId || "");
-    setPhone(initialData.phone || "");
-    setAddress(initialData.address || "");
-    setPhotoURL(initialData.photoURL || "/default-avatar.jpg");
-    setPhotoPreview(initialData.photoURL || "/default-avatar.jpg");
-  }
-}, [initialData]);
 
   function handlePhotoChange(e) {
     const file = e.target.files[0];
@@ -60,6 +60,7 @@ useEffect(() => {
       { method: "POST", body: formData }
     );
     const data = await res.json();
+    if (!data.secure_url) throw new Error("Upload failed");
     return data.secure_url;
   }
 
@@ -73,9 +74,14 @@ useEffect(() => {
 
     setSaving(true);
     try {
-      let finalPhotoURL = photoURL;
+      let finalPhotoURL = photoURL || DEFAULT_AVATAR;
       if (photoFile) {
-        finalPhotoURL = await uploadToCloudinary(photoFile);
+        try {
+          finalPhotoURL = await uploadToCloudinary(photoFile);
+        } catch (err) {
+          console.error("Upload failed", err);
+          finalPhotoURL = photoURL || DEFAULT_AVATAR;
+        }
       }
 
       await saveUserProfile(currentUser.uid, {
@@ -108,7 +114,7 @@ useEffect(() => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-[#FAF7F2] rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-[#E8D5B7]">
-        
+
         {/* Header */}
         <div className="px-8 pt-8 pb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-[#2C2825]">Edit Profile</h2>
@@ -122,11 +128,11 @@ useEffect(() => {
           {/* Avatar */}
           <div className="flex flex-col items-center gap-3">
             <div
-              className="w-24 h-24 rounded-full overflow-hidden border-4 border-[#E8D5B7] cursor-pointer hover:opacity-80 transition-opacity relative"
+              className="w-24 h-24 rounded-full overflow-hidden border-4 border-[#E8D5B7] cursor-pointer hover:opacity-80 transition-opacity relative group"
               onClick={() => fileInputRef.current.click()}
             >
               <img src={photoPreview} alt="avatar" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full">
+              <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                 <span className="text-white text-xs font-medium">Change</span>
               </div>
             </div>
@@ -164,7 +170,7 @@ useEffect(() => {
             <div className="mt-1 h-4">{userIdIndicator()}</div>
           </div>
 
-          {/* Email (read only) */}
+          {/* Email */}
           <div>
             <label className="text-[#2C2825] text-sm font-semibold block mb-1">Email</label>
             <input
