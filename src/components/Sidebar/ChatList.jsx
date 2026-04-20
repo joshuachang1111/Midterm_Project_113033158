@@ -30,11 +30,18 @@ function ChatItem({ chat, currentUid, isSelected, onClick }) {
         className="w-11 h-11 rounded-full object-cover flex-shrink-0 border-2 border-[#E8D5B7]"
       />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-[#2C2825] truncate">{otherUser.username}</p>
-        <p className="text-xs text-[#A89880] truncate">
+        <p className={`text-sm truncate ${chat.unread > 0 ? "font-bold text-[#2C2825]" : "font-semibold text-[#2C2825]"}`}>
+          {otherUser.username}
+        </p>
+        <p className={`text-xs truncate ${chat.unread > 0 ? "text-[#2C2825] font-medium" : "text-[#A89880]"}`}>
           {chat.lastMessage || "No messages yet"}
         </p>
       </div>
+      {chat.unread > 0 && (
+        <span className="w-5 h-5 bg-[#C8956C] rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+          {chat.unread > 99 ? "99+" : chat.unread}
+        </span>
+      )}
     </button>
   );
 }
@@ -44,11 +51,8 @@ export default function ChatList({ onSelectChat, selectedChatId }) {
   const { chats, loading } = useChats(currentUser?.uid);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filtered = chats.filter(chat => true); // 之後加搜尋過濾
-
   return (
     <div className="w-72 bg-[#F5F0E8] flex flex-col flex-shrink-0 border-r border-[#E8E0D0]">
-      {/* Header */}
       <div className="px-5 pt-6 pb-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-[#2C2825]">Messages</h1>
@@ -76,7 +80,6 @@ export default function ChatList({ onSelectChat, selectedChatId }) {
         </div>
       </div>
 
-      {/* Chat list */}
       <div className="flex-1 overflow-y-auto px-3">
         {loading && (
           <p className="text-center text-[#A89880] text-sm py-8">Loading...</p>
@@ -92,7 +95,7 @@ export default function ChatList({ onSelectChat, selectedChatId }) {
             <p className="text-xs mt-1">Press + to start a new chat</p>
           </div>
         )}
-        {filtered.map(chat => (
+        {chats.map(chat => (
           <ChatItem
             key={chat.id}
             chat={chat}
@@ -103,7 +106,6 @@ export default function ChatList({ onSelectChat, selectedChatId }) {
         ))}
       </div>
 
-      {/* Current user info */}
       <div className="px-4 py-3 border-t border-[#E8E0D0] flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-[#C8956C] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
           {currentUser?.email?.[0]?.toUpperCase()}
