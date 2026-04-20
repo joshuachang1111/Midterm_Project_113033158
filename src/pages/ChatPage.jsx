@@ -8,7 +8,7 @@ import { useUserProfile } from "../hooks/useUserProfile";
 
 export default function ChatPage() {
   const { currentUser } = useAuth();
-  const { profile, loading } = useUserProfile(currentUser?.uid);
+  const { profile, loading, refetch } = useUserProfile(currentUser?.uid);
   const [activePanel, setActivePanel] = useState("chats");
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
@@ -21,7 +21,8 @@ export default function ChatPage() {
     setActivePanel(id);
   }
 
-  function handleProfileClose() {
+  async function handleProfileClose() {
+    await refetch();
     setProfileSaved(true);
     setShowProfile(false);
   }

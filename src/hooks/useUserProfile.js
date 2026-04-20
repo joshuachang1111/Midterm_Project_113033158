@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { doc, getDoc, setDoc, query, collection, where, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 
@@ -6,24 +6,26 @@ export function useUserProfile(uid) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchProfile = useCallback(async () => {
     if (!uid) return;
-    const fetch = async () => {
-      const snap = await getDoc(doc(db, "users", uid));
-      if (snap.exists()) setProfile(snap.data());
-      setLoading(false);
-    };
-    fetch();
+    setLoading(true);
+    const snap = await getDoc(doc(db, "users", uid));
+    if (snap.exists()) setProfile(snap.data());
+    else setProfile(null);
+    setLoading(false);
   }, [uid]);
 
-  return { profile, loading };
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  return { profile, loading, refetch: fetchProfile };
 }
 
 export async function checkUserIdAvailable(userId, currentUid) {
   const q = query(collection(db, "users"), where("userId", "==", userId));
   const snap = await getDocs(q);
   if (snap.empty) return true;
-  // 如果找到的是自己就算可用
   return snap.docs[0].id === currentUid;
 }
 

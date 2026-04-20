@@ -32,6 +32,18 @@ export default function ProfileModal({ onClose, forceOpen = false, initialData =
     return () => clearTimeout(timer);
   }, [userId, currentUser.uid]);
 
+  // 當 initialData 載入進來時，更新欄位
+useEffect(() => {
+  if (initialData) {
+    setUsername(initialData.username || "");
+    setUserId(initialData.userId || "");
+    setPhone(initialData.phone || "");
+    setAddress(initialData.address || "");
+    setPhotoURL(initialData.photoURL || "/default-avatar.jpg");
+    setPhotoPreview(initialData.photoURL || "/default-avatar.jpg");
+  }
+}, [initialData]);
+
   function handlePhotoChange(e) {
     const file = e.target.files[0];
     if (!file) return;
