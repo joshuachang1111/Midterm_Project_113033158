@@ -45,7 +45,6 @@ function GroupAvatars({ memberProfiles, currentUid }) {
   );
 }
 
-// Edit Message Modal
 function EditMessageModal({ message, chatroomId, onClose }) {
   const [text, setText] = useState(message.text);
   const [saving, setSaving] = useState(false);
@@ -109,7 +108,6 @@ function EditMessageModal({ message, chatroomId, onClose }) {
   );
 }
 
-// Image Preview Modal
 function ImagePreviewModal({ imageURL, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
@@ -211,13 +209,12 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [showEditGroup, setShowEditGroup] = useState(false);
 
-  // Message operations state
   const [hoveredMsgId, setHoveredMsgId] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingImagePreview, setUploadingImagePreview] = useState(null);
 
-  // Search state
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -262,14 +259,13 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, uploadingImagePreview]);
 
   useEffect(() => {
     if (!selectedChatId || !currentUser?.uid) return;
     markAsRead(selectedChatId, currentUser.uid);
   }, [selectedChatId, currentUser?.uid]);
 
-  // Search logic
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -310,13 +306,20 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
   async function handleImageSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
+
+    const localPreview = URL.createObjectURL(file);
+    setUploadingImagePreview(localPreview);
     setUploadingImage(true);
+
     try {
       const url = await uploadToCloudinary(file);
       await sendImageMessage(selectedChatId, currentUser.uid, url, members);
     } catch (err) {
       console.error("Image upload failed", err);
     }
+
+    URL.revokeObjectURL(localPreview);
+    setUploadingImagePreview(null);
     setUploadingImage(false);
     e.target.value = "";
   }
@@ -388,7 +391,8 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
         {/* Search icon */}
         <button
           onClick={() => { setShowSearch(!showSearch); setSearchQuery(""); }}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-[#A89880] hover:text-[#2C2825] hover:bg-[#F5ECD7] transition-colors">
+          className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors
+            ${showSearch ? "bg-[#E8D5B7] text-[#2C2825]" : "text-[#A89880] hover:text-[#2C2825] hover:bg-[#F5ECD7]"}`}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
             strokeWidth={2} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round"
@@ -540,7 +544,6 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
 
               {isMe && (
                 <div className={`flex items-end justify-end gap-2 ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
-                  {/* Action buttons on hover */}
                   {hoveredMsgId === msg.id && !msg.unsent && (
                     <div className="flex items-center gap-1 mb-1">
                       {msg.type === "text" && (
@@ -587,29 +590,43 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
             </div>
           );
         })}
+
+        {/* Uploading image preview */}
+        {uploadingImagePreview && (
+          <div className="flex items-end justify-end gap-2 mt-3">
+            <div className="max-w-[60%] relative">
+              <img
+                src={uploadingImagePreview} alt=""
+                className="max-w-full rounded-2xl opacity-60"
+              />
+              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/20">
+                <div className="bg-white/90 rounded-2xl px-4 py-2 flex items-center gap-2">
+                  <svg className="w-4 h-4 animate-spin text-[#C8956C]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  <span className="text-xs text-[#2C2825] font-medium">Uploading...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div ref={bottomRef} />
       </div>
 
       {/* Input */}
       <div className="px-6 py-4 border-t border-[#E8E0D0] bg-white/60 backdrop-blur-sm flex-shrink-0">
         <div className="flex items-end gap-3">
-          {/* Image upload button */}
           <button
             onClick={() => imageInputRef.current?.click()}
             disabled={uploadingImage}
             className="w-11 h-11 bg-[#F5ECD7] rounded-2xl flex items-center justify-center text-[#A89880] hover:text-[#2C2825] hover:bg-[#E8D5B7] transition-colors flex-shrink-0 disabled:opacity-50">
-            {uploadingImage ? (
-              <svg className="w-5 h-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-              </svg>
-            )}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+            </svg>
           </button>
           <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
 
