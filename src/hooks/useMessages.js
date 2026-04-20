@@ -35,6 +35,8 @@ export async function sendMessage(chatroomId, senderId, text, members) {
     text: trimmed,
     type: "text",
     timestamp: serverTimestamp(),
+    edited: false,
+    unsent: false,
   });
 
   const unreadUpdate = {};
@@ -48,6 +50,47 @@ export async function sendMessage(chatroomId, senderId, text, members) {
     lastMessage: trimmed,
     lastMessageAt: serverTimestamp(),
     ...unreadUpdate,
+  });
+}
+
+export async function sendImageMessage(chatroomId, senderId, imageURL, members) {
+  await addDoc(collection(db, "chatrooms", chatroomId, "messages"), {
+    senderId,
+    type: "image",
+    imageURL,
+    text: "",
+    timestamp: serverTimestamp(),
+    unsent: false,
+  });
+
+  const unreadUpdate = {};
+  members.forEach(uid => {
+    if (uid !== senderId) {
+      unreadUpdate[`unreadCount.${uid}`] = increment(1);
+    }
+  });
+
+  await updateDoc(doc(db, "chatrooms", chatroomId), {
+    lastMessage: "📷 Image",
+    lastMessageAt: serverTimestamp(),
+    ...unreadUpdate,
+  });
+}
+
+export async function unsendMessage(chatroomId, messageId) {
+  await updateDoc(doc(db, "chatrooms", chatroomId, "messages", messageId), {
+    unsent: true,
+    text: "",
+    imageURL: null,
+  });
+}
+
+export async function editMessage(chatroomId, messageId, newText) {
+  const trimmed = newText.trim();
+  if (!trimmed) return;
+  await updateDoc(doc(db, "chatrooms", chatroomId, "messages", messageId), {
+    text: trimmed,
+    edited: true,
   });
 }
 
