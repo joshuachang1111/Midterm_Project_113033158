@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase/config";
+import { uploadToCloudinary } from "../../utils/cloudinary";
 
 export default function EditGroupModal({ chatroomId, currentName, currentPhoto, onClose }) {
   const [name, setName] = useState(currentName || "");
@@ -12,22 +13,13 @@ export default function EditGroupModal({ chatroomId, currentName, currentPhoto, 
   function handlePhotoChange(e) {
     const file = e.target.files[0];
     if (!file) return;
+    if (photoPreview && photoPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(photoPreview);
+    }
     setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
-  }
+    }
 
-  async function uploadToCloudinary(file) {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
-      { method: "POST", body: formData }
-    );
-    const data = await res.json();
-    if (!data.secure_url) throw new Error("Upload failed");
-    return data.secure_url;
-  }
 
   async function handleSave() {
     setError("");

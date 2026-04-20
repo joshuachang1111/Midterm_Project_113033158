@@ -26,7 +26,22 @@ export default function AuthPage() {
         await createUserWithEmailAndPassword(auth, email, password);
       }
     } catch (err) {
-      setError(err.message);
+      const code = err.code;
+      if (code === "auth/invalid-credential" || code === "auth/wrong-password") {
+        setError("Incorrect email or password.");
+      } else if (code === "auth/user-not-found") {
+        setError("No account found with this email.");
+      } else if (code === "auth/email-already-in-use") {
+        setError("This email is already registered.");
+      } else if (code === "auth/weak-password") {
+        setError("Password must be at least 6 characters.");
+      } else if (code === "auth/invalid-email") {
+        setError("Please enter a valid email address.");
+      } else if (code === "auth/too-many-requests") {
+        setError("Too many attempts. Please try again later.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     }
     setLoading(false);
   }
@@ -37,7 +52,8 @@ export default function AuthPage() {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
     } catch (err) {
-      setError(err.message);
+      if (err.code === "auth/popup-closed-by-user") return;
+      setError("Google sign in failed. Please try again.");
     }
   }
 

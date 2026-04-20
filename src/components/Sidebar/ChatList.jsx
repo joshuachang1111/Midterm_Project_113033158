@@ -35,18 +35,7 @@ function GroupAvatars({ members, currentUid }) {
   );
 }
 
-function ChatItem({ chat, currentUid, isSelected, onClick }) {
-  const [otherUser, setOtherUser] = useState(null);
-
-  useEffect(() => {
-    if (chat.type === "group") return;
-    const otherUid = chat.members.find(m => m !== currentUid);
-    if (!otherUid) return;
-    getDoc(doc(db, "users", otherUid)).then(snap => {
-      if (snap.exists()) setOtherUser(snap.data());
-    });
-  }, [chat, currentUid]);
-
+function ChatItem({ chat, currentUid, isSelected, onClick, otherUser }) {
   if (chat.type !== "group" && !otherUser) return null;
 
   const displayName = chat.type === "group" ? chat.name : otherUser?.username;
@@ -90,6 +79,42 @@ export default function ChatList({ onSelectChat, selectedChatId, profile }) {
   const { currentUser } = useAuth();
   const { chats, loading } = useChats(currentUser?.uid);
   const [searchQuery, setSearchQuery] = useState("");
+  const [otherUsers, setOtherUsers] = useState({});
+
+  // 在 ChatList 層級抓所有 direct chat 的對方資料
+  useEffect(() => {
+    if (!chats.length) return;
+    const directChats = chats.filter(c => c.type !== "group");
+    directChats.forEach(chat => {
+      const otherUid = chat.members.find(m => m !== currentUser.uid);
+      if (!otherUid || otherUsers[otherUid]) return;
+      getDoc(doc(db, "users", otherUid)).then(snap => {
+        if (snap.exists()) {
+          setOtherUsers(prev => ({ ...prev, [otherUid]: snap.data() }));
+        }
+      });
+    });
+  }, [chats, currentUser.uid]);
+
+  const filteredChats = chats.filter(chat => {
+    if (!searchQuery.trim()) return true;
+    const keyword = searchQuery.toLowerCase();
+
+    if (chat.type === "group") {
+      return (
+        chat.name?.toLowerCase().includes(keyword) ||
+        (chat.lastMessage || "").toLowerCase().includes(keyword)
+      );
+    } else {
+      const otherUid = chat.members.find(m => m !== currentUser.uid);
+      const other = otherUsers[otherUid];
+      return (
+        other?.username?.toLowerCase().includes(keyword) ||
+        other?.userId?.toLowerCase().includes(keyword) ||
+        (chat.lastMessage || "").toLowerCase().includes(keyword)
+      );
+    }
+  });
 
   return (
     <div className="w-72 bg-[#F5F0E8] flex flex-col flex-shrink-0 border-r border-[#E8E0D0]">
@@ -127,10 +152,24 @@ export default function ChatList({ onSelectChat, selectedChatId, profile }) {
             <p className="text-xs mt-1">Press + to start a new chat</p>
           </div>
         )}
-        {chats.map(chat => (
-          <ChatItem key={chat.id} chat={chat} currentUid={currentUser.uid}
-            isSelected={selectedChatId === chat.id} onClick={() => onSelectChat(chat.id)} />
-        ))}
+        {!loading && searchQuery && filteredChats.length === 0 && (
+          <p className="text-center text-[#A89880] text-sm py-8">No results found</p>
+        )}
+        {filteredChats.map(chat => {
+          const otherUid = chat.type !== "group"
+            ? chat.members.find(m => m !== currentUser.uid)
+            : null;
+          return (
+            <ChatItem
+              key={chat.id}
+              chat={chat}
+              currentUid={currentUser.uid}
+              isSelected={selectedChatId === chat.id}
+              onClick={() => onSelectChat(chat.id)}
+              otherUser={otherUid ? otherUsers[otherUid] : null}
+            />
+          );
+        })}
       </div>
 
       <div className="px-4 py-3 border-t border-[#E8E0D0] flex items-center gap-3">
