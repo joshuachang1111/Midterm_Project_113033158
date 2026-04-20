@@ -2,16 +2,51 @@ import { useState } from "react";
 import IconBar from "../components/Sidebar/IconBar";
 import ChatList from "../components/Sidebar/ChatList";
 import ChatArea from "../components/Chat/ChatArea";
+import ProfileModal from "../components/Profile/ProfileModal";
+import { useAuth } from "../context/AuthContext";
+import { useUserProfile } from "../hooks/useUserProfile";
 
 export default function ChatPage() {
+  const { currentUser } = useAuth();
+  const { profile, loading } = useUserProfile(currentUser?.uid);
   const [activePanel, setActivePanel] = useState("chats");
   const [selectedChatId, setSelectedChatId] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+
+  const forceProfile = !loading && !profile && !profileSaved;
+
+  function handleIconClick(id) {
+    if (id === "profile") { setShowProfile(true); return; }
+    setActivePanel(id);
+  }
+
+  function handleProfileClose() {
+    setProfileSaved(true);
+    setShowProfile(false);
+  }
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#FAF7F2]">
+        <p className="text-[#A89880]">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex overflow-hidden bg-[#FAF7F2]">
-      <IconBar activePanel={activePanel} setActivePanel={setActivePanel} />
+      <IconBar activePanel={activePanel} setActivePanel={handleIconClick} />
       <ChatList onSelectChat={setSelectedChatId} selectedChatId={selectedChatId} />
       <ChatArea selectedChatId={selectedChatId} />
+
+      {(forceProfile || showProfile) && (
+        <ProfileModal
+          forceOpen={forceProfile}
+          initialData={profile}
+          onClose={handleProfileClose}
+        />
+      )}
     </div>
   );
 }
