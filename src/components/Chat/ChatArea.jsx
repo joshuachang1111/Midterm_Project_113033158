@@ -227,6 +227,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
 
   useEffect(() => {
     if (!selectedChatId) return;
+    messageRefs.current = {};
     setOtherUser(null);
     setMembers([]);
     setChatData(null);

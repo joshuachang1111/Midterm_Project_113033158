@@ -4,7 +4,6 @@ import {
   addDoc, serverTimestamp, doc, updateDoc, increment
 } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { escapeHtml } from "../utils/escapeHtml";
 
 export function useMessages(chatroomId) {
   const [messages, setMessages] = useState([]);
@@ -28,7 +27,7 @@ export function useMessages(chatroomId) {
 }
 
 export async function sendMessage(chatroomId, senderId, text, members) {
-  const trimmed = escapeHtml(text.trim());
+  const trimmed = text.trim();
   if (!trimmed) return;
 
   await addDoc(collection(db, "chatrooms", chatroomId, "messages"), {
