@@ -505,7 +505,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
               onMouseLeave={() => setHoveredMsgId(null)}
             >
               {!isMe && (
-                <div className={`flex items-start gap-2 ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
+                <div className={`flex items-start gap-2 animate-slide-in-left ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
                   <div className="w-8 flex-shrink-0">
                     {isFirstInGroup ? (
                       <img src={senderProfile?.photoURL || DEFAULT_AVATAR} alt=""
@@ -544,7 +544,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
               )}
 
               {isMe && (
-                <div className={`flex items-end justify-end gap-2 ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
+                <div className={`flex items-end justify-end gap-2 animate-slide-in-right ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
                   {hoveredMsgId === msg.id && !msg.unsent && (
                     <div className="flex items-center gap-1 mb-1">
                       {msg.type === "text" && (

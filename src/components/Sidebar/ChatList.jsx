@@ -43,7 +43,7 @@ function ChatItem({ chat, currentUid, isSelected, onClick, otherUser }) {
 
   return (
     <button onClick={onClick}
-      className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-colors text-left
+      className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-colors text-left animate-fade-in
         ${isSelected ? "bg-[#E8D5B7]" : "hover:bg-[#EDE5D8]"}`}>
 
       {chat.type === "group" ? (

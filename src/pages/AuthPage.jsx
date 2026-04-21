@@ -59,7 +59,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E8D5B7] via-[#F5ECD7] to-[#FAF7F2] p-4">
-      <div className="w-full max-w-md bg-white/70 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-[#E8D5B7]">
+      <div className="w-full max-w-md bg-white/70 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-[#E8D5B7] animate-drop-down">
 
         {/* Logo */}
         <div className="text-center mb-8">
