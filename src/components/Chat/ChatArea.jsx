@@ -6,12 +6,13 @@ import {
 import { db } from "../../firebase/config";
 import { useAuth } from "../../context/AuthContext";
 import {
-  useMessages, sendMessage, sendImageMessage,
+  useMessages, sendMessage, sendImageMessage, sendGifMessage,
   unsendMessage, editMessage, sendSystemMessage
 } from "../../hooks/useMessages";
 import { markAsRead } from "../../hooks/useChats";
 import { uploadToCloudinary } from "../../utils/cloudinary";
 import EditGroupModal from "./EditGroupModal";
+import GifPicker from "./GifPicker";
 
 const DEFAULT_AVATAR = "https://res.cloudinary.com/dynzpaa0u/image/upload/v1776656443/default-avatar_vmy7o0.jpg";
 
@@ -214,6 +215,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
   const [previewImage, setPreviewImage] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingImagePreview, setUploadingImagePreview] = useState(null);
+  const [showGifPicker, setShowGifPicker] = useState(false);
 
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -234,6 +236,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
     setMemberProfiles({});
     setShowSearch(false);
     setSearchQuery("");
+    setShowGifPicker(false);
 
     const unsub = onSnapshot(doc(db, "chatrooms", selectedChatId), async (snap) => {
       if (!snap.exists()) return;
@@ -323,6 +326,11 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
     setUploadingImagePreview(null);
     setUploadingImage(false);
     e.target.value = "";
+  }
+
+  async function handleGifSelect(gifURL) {
+    setShowGifPicker(false);
+    await sendGifMessage(selectedChatId, currentUser.uid, gifURL, members);
   }
 
   async function handleUnsend(msgId) {
@@ -468,7 +476,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-1" onClick={() => setShowMenu(false)}>
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-1" onClick={() => { setShowMenu(false); setShowGifPicker(false); }}>
         {loading && <p className="text-center text-[#A89880] text-sm py-8">Loading messages...</p>}
         {!loading && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-[#A89880]">
@@ -496,6 +504,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
           const senderProfile = isGroup ? memberProfiles[msg.senderId] : otherUser;
           const isHighlighted = searchResults[searchIndex] === msg.id;
           const isSearchMatch = searchResults.includes(msg.id);
+          const mediaURL = msg.type === "gif" ? msg.gifURL : msg.imageURL;
 
           return (
             <div
@@ -518,12 +527,12 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
                     )}
                     {msg.unsent ? (
                       <p className="text-xs italic text-[#A89880] px-4 py-2.5">This message was unsent</p>
-                    ) : msg.type === "image" ? (
+                    ) : msg.type === "image" || msg.type === "gif" ? (
                       <img
-                        src={msg.imageURL} alt="sent image"
+                        src={mediaURL} alt={msg.type === "gif" ? "GIF" : "sent image"}
                         className={`max-w-full rounded-2xl cursor-pointer hover:opacity-90 transition-opacity
                           ${isHighlighted ? "ring-4 ring-[#C8956C]" : isSearchMatch ? "ring-2 ring-[#C8956C]/40" : ""}`}
-                        onClick={() => setPreviewImage(msg.imageURL)}
+                        onClick={() => setPreviewImage(mediaURL)}
                       />
                     ) : (
                       <div className={`bg-white text-[#2C2825] px-4 py-2.5 shadow-sm text-sm transition-colors
@@ -564,12 +573,12 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
                   <div className="max-w-[60%]">
                     {msg.unsent ? (
                       <p className="text-xs italic text-[#A89880] px-4 py-2.5">This message was unsent</p>
-                    ) : msg.type === "image" ? (
+                    ) : msg.type === "image" || msg.type === "gif" ? (
                       <img
-                        src={msg.imageURL} alt="sent image"
+                        src={mediaURL} alt={msg.type === "gif" ? "GIF" : "sent image"}
                         className={`max-w-full rounded-2xl cursor-pointer hover:opacity-90 transition-opacity
                           ${isHighlighted ? "ring-4 ring-[#C8956C]" : isSearchMatch ? "ring-2 ring-[#C8956C]/40" : ""}`}
-                        onClick={() => setPreviewImage(msg.imageURL)}
+                        onClick={() => setPreviewImage(mediaURL)}
                       />
                     ) : (
                       <div className={`bg-[#C8956C] text-white px-4 py-2.5 text-sm transition-colors
@@ -596,10 +605,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
         {uploadingImagePreview && (
           <div className="flex items-end justify-end gap-2 mt-3">
             <div className="max-w-[60%] relative">
-              <img
-                src={uploadingImagePreview} alt=""
-                className="max-w-full rounded-2xl opacity-60"
-              />
+              <img src={uploadingImagePreview} alt="" className="max-w-full rounded-2xl opacity-60" />
               <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/20">
                 <div className="bg-white/90 rounded-2xl px-4 py-2 flex items-center gap-2">
                   <svg className="w-4 h-4 animate-spin text-[#C8956C]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -619,6 +625,8 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
       {/* Input */}
       <div className="px-6 py-4 border-t border-[#E8E0D0] bg-white/60 backdrop-blur-sm flex-shrink-0">
         <div className="flex items-end gap-3">
+
+          {/* Image upload button */}
           <button
             onClick={() => imageInputRef.current?.click()}
             disabled={uploadingImage}
@@ -630,6 +638,22 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
             </svg>
           </button>
           <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+
+          {/* GIF button */}
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => setShowGifPicker(!showGifPicker)}
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm transition-colors
+                ${showGifPicker ? "bg-[#C8956C] text-white" : "bg-[#F5ECD7] text-[#A89880] hover:text-[#2C2825] hover:bg-[#E8D5B7]"}`}>
+              GIF
+            </button>
+            {showGifPicker && (
+              <GifPicker
+                onSelect={handleGifSelect}
+                onClose={() => setShowGifPicker(false)}
+              />
+            )}
+          </div>
 
           <textarea ref={textareaRef} value={text}
             onChange={(e) => {

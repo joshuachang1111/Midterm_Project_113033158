@@ -77,6 +77,30 @@ export async function sendImageMessage(chatroomId, senderId, imageURL, members) 
   });
 }
 
+export async function sendGifMessage(chatroomId, senderId, gifURL, members) {
+  await addDoc(collection(db, "chatrooms", chatroomId, "messages"), {
+    senderId,
+    type: "gif",
+    gifURL,
+    text: "",
+    timestamp: serverTimestamp(),
+    unsent: false,
+  });
+
+  const unreadUpdate = {};
+  members.forEach(uid => {
+    if (uid !== senderId) {
+      unreadUpdate[`unreadCount.${uid}`] = increment(1);
+    }
+  });
+
+  await updateDoc(doc(db, "chatrooms", chatroomId), {
+    lastMessage: "🎞️ GIF",
+    lastMessageAt: serverTimestamp(),
+    ...unreadUpdate,
+  });
+}
+
 export async function unsendMessage(chatroomId, messageId) {
   await updateDoc(doc(db, "chatrooms", chatroomId, "messages", messageId), {
     unsent: true,
