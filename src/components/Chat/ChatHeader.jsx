@@ -3,7 +3,7 @@ import GroupAvatars from "./GroupAvatars";
 const DEFAULT_AVATAR = "https://res.cloudinary.com/dynzpaa0u/image/upload/v1776656443/default-avatar_vmy7o0.jpg";
 
 export default function ChatHeader({
-  chatData, otherUser, isGroup, members, memberProfiles, currentUid,
+  chatData, otherUser, isGroup, isBot, members, memberProfiles, currentUid,
   showSearch, setShowSearch, setSearchQuery,
   showMenu, setShowMenu,
   onEditGroup, onAddMembers, onLeaveGroup,
@@ -11,7 +11,13 @@ export default function ChatHeader({
   return (
     <div className="px-6 py-4 border-b border-[#E8E0D0] flex items-center gap-3 bg-white/60 backdrop-blur-sm flex-shrink-0">
       <div className="flex-1 flex items-center gap-3 min-w-0">
-        {isGroup ? (
+
+        {/* Avatar */}
+        {isBot ? (
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C8956C] to-[#A89880] flex items-center justify-center text-xl flex-shrink-0">
+            🤖
+          </div>
+        ) : isGroup ? (
           chatData?.photoURL ? (
             <img src={chatData.photoURL} alt=""
               className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-[#E8D5B7]" />
@@ -24,12 +30,18 @@ export default function ChatHeader({
               className="w-10 h-10 rounded-full object-cover border-2 border-[#E8D5B7] flex-shrink-0" />
           )
         )}
+
+        {/* Name & subtitle */}
         <div className="min-w-0">
           <p className="font-semibold text-[#2C2825] truncate">
             {isGroup ? chatData?.name : otherUser?.username}
           </p>
           <p className="text-xs text-[#A89880]">
-            {isGroup ? `${members.length} members` : `@${otherUser?.userId || ""}`}
+            {isBot
+              ? "Powered by Gemini ✨"
+              : isGroup
+              ? `${members.length} members`
+              : `@${otherUser?.userId || ""}`}
           </p>
         </div>
       </div>
@@ -46,7 +58,7 @@ export default function ChatHeader({
         </svg>
       </button>
 
-      {/* Group menu - stopPropagation 防止冒泡到 ChatArea 的 onClick */}
+      {/* Group menu */}
       {isGroup && (
         <div className="relative" onClick={(e) => e.stopPropagation()}>
           <button onClick={() => setShowMenu(!showMenu)}

@@ -9,17 +9,28 @@ import { GroupAvatarsFromUids } from "../Chat/GroupAvatars";
 const DEFAULT_AVATAR = "https://res.cloudinary.com/dynzpaa0u/image/upload/v1776656443/default-avatar_vmy7o0.jpg";
 
 function ChatItem({ chat, currentUid, isSelected, onClick, otherUser }) {
-  if (chat.type !== "group" && !otherUser) return null;
+  if (chat.type !== "group" && chat.type !== "bot" && !otherUser) return null;
 
-  const displayName = chat.type === "group" ? chat.name : otherUser?.username;
-  const displayPhoto = chat.type === "group" ? null : otherUser?.photoURL;
+  const displayName = chat.type === "group"
+    ? chat.name
+    : chat.type === "bot"
+    ? "AI Assistant"
+    : otherUser?.username;
+
+  const displayPhoto = chat.type === "group" || chat.type === "bot"
+    ? null
+    : otherUser?.photoURL;
 
   return (
     <button onClick={onClick}
       className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-colors text-left animate-fade-in
         ${isSelected ? "bg-[#E8D5B7]" : "hover:bg-[#EDE5D8]"}`}>
 
-      {chat.type === "group" ? (
+      {chat.type === "bot" ? (
+        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#C8956C] to-[#A89880] flex items-center justify-center text-xl flex-shrink-0">
+          🤖
+        </div>
+      ) : chat.type === "group" ? (
         chat.photoURL ? (
           <img src={chat.photoURL} alt={chat.name}
             className="w-11 h-11 rounded-full object-cover flex-shrink-0 border-2 border-[#E8D5B7]" />
@@ -56,7 +67,7 @@ export default function ChatList({ onSelectChat, selectedChatId, profile }) {
 
   useEffect(() => {
     if (!chats.length) return;
-    const directChats = chats.filter(c => c.type !== "group");
+    const directChats = chats.filter(c => c.type === "direct");
     directChats.forEach(chat => {
       const otherUid = chat.members.find(m => m !== currentUser.uid);
       if (!otherUid || otherUsers[otherUid]) return;
@@ -71,20 +82,22 @@ export default function ChatList({ onSelectChat, selectedChatId, profile }) {
   const filteredChats = chats.filter(chat => {
     if (!searchQuery.trim()) return true;
     const keyword = searchQuery.toLowerCase();
+    if (chat.type === "bot") {
+      return "ai assistant".includes(keyword);
+    }
     if (chat.type === "group") {
       return (
         chat.name?.toLowerCase().includes(keyword) ||
         (chat.lastMessage || "").toLowerCase().includes(keyword)
       );
-    } else {
-      const otherUid = chat.members.find(m => m !== currentUser.uid);
-      const other = otherUsers[otherUid];
-      return (
-        other?.username?.toLowerCase().includes(keyword) ||
-        other?.userId?.toLowerCase().includes(keyword) ||
-        (chat.lastMessage || "").toLowerCase().includes(keyword)
-      );
     }
+    const otherUid = chat.members.find(m => m !== currentUser.uid);
+    const other = otherUsers[otherUid];
+    return (
+      other?.username?.toLowerCase().includes(keyword) ||
+      other?.userId?.toLowerCase().includes(keyword) ||
+      (chat.lastMessage || "").toLowerCase().includes(keyword)
+    );
   });
 
   return (
@@ -127,7 +140,7 @@ export default function ChatList({ onSelectChat, selectedChatId, profile }) {
           <p className="text-center text-[#A89880] text-sm py-8">No results found</p>
         )}
         {filteredChats.map(chat => {
-          const otherUid = chat.type !== "group"
+          const otherUid = chat.type === "direct"
             ? chat.members.find(m => m !== currentUser.uid)
             : null;
           return (

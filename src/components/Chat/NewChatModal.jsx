@@ -6,6 +6,7 @@ import { createChat, findExistingChat } from "../../hooks/useChats";
 import { uploadToCloudinary } from "../../utils/cloudinary";
 
 const DEFAULT_AVATAR = "https://res.cloudinary.com/dynzpaa0u/image/upload/v1776656443/default-avatar_vmy7o0.jpg";
+const BOT_AVATAR = "https://api.dicebear.com/7.x/bottts/svg?seed=assistant";
 
 export default function NewChatModal({ onClose, onChatCreated }) {
   const { currentUser } = useAuth();
@@ -14,8 +15,8 @@ export default function NewChatModal({ onClose, onChatCreated }) {
   const [results, setResults] = useState([]);
   const [existingChatIds, setExistingChatIds] = useState({});
   const [loading, setLoading] = useState(false);
+  const [creatingBot, setCreatingBot] = useState(false);
 
-  // Group state
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [groupName, setGroupName] = useState("");
   const [groupPhoto, setGroupPhoto] = useState(null);
@@ -76,7 +77,6 @@ export default function NewChatModal({ onClose, onChatCreated }) {
     setGroupPhotoPreview(URL.createObjectURL(file));
   }
 
-
   async function handleCreateGroup() {
     setGroupError("");
     if (selectedUsers.length < 2) {
@@ -118,6 +118,43 @@ export default function NewChatModal({ onClose, onChatCreated }) {
     setCreating(false);
   }
 
+  async function handleCreateBotChat() {
+    setCreatingBot(true);
+    try {
+      // 檢查是否已有 bot 聊天室
+      const snap = await getDocs(collection(db, "chatrooms"));
+      const existing = snap.docs.find(d => {
+        const data = d.data();
+        return data.type === "bot" && data.members?.includes(currentUser.uid);
+      });
+
+      if (existing) {
+        onChatCreated(existing.id);
+        onClose();
+        return;
+      }
+
+      // 建立新的 bot 聊天室
+      const ref = await addDoc(collection(db, "chatrooms"), {
+        members: [currentUser.uid],
+        type: "bot",
+        name: "AI Assistant",
+        photoURL: null,
+        createdBy: currentUser.uid,
+        lastMessage: "",
+        lastMessageAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        unreadCount: { [currentUser.uid]: 0 },
+      });
+
+      onChatCreated(ref.id);
+      onClose();
+    } catch (err) {
+      console.error(err);
+    }
+    setCreatingBot(false);
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-[#FAF7F2] rounded-3xl shadow-2xl w-full max-w-md border border-[#E8D5B7] max-h-[85vh] flex flex-col">
@@ -132,14 +169,14 @@ export default function NewChatModal({ onClose, onChatCreated }) {
         {/* Tabs */}
         <div className="px-6 pb-4 flex-shrink-0">
           <div className="flex bg-[#F5ECD7] rounded-2xl p-1">
-            {["direct", "group"].map(t => (
+            {["direct", "group", "ai"].map(t => (
               <button
                 key={t}
                 onClick={() => { setTab(t); setSearch(""); setResults([]); setGroupError(""); }}
                 className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all duration-200
                   ${tab === t ? "bg-[#2C2825] text-white shadow" : "text-[#A89880] hover:text-[#2C2825]"}`}
               >
-                {t === "direct" ? "Direct Message" : "New Group"}
+                {t === "direct" ? "Direct" : t === "group" ? "Group" : "AI Chat"}
               </button>
             ))}
           </div>
@@ -195,8 +232,6 @@ export default function NewChatModal({ onClose, onChatCreated }) {
         {tab === "group" && (
           <div className="flex flex-col flex-1 overflow-hidden">
             <div className="px-6 overflow-y-auto flex-1 space-y-4 pb-4">
-
-              {/* Group photo + name */}
               <div className="flex items-center gap-4">
                 <label className="w-14 h-14 rounded-2xl border-2 border-dashed border-[#E8D5B7] flex items-center justify-center cursor-pointer hover:bg-[#F5ECD7] transition-colors flex-shrink-0 overflow-hidden">
                   {groupPhotoPreview ? (
@@ -219,7 +254,6 @@ export default function NewChatModal({ onClose, onChatCreated }) {
                 />
               </div>
 
-              {/* Selected users */}
               {selectedUsers.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {selectedUsers.map(u => (
@@ -233,7 +267,6 @@ export default function NewChatModal({ onClose, onChatCreated }) {
                 </div>
               )}
 
-              {/* Search */}
               <div className="relative">
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A89880]"
                   xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -248,7 +281,6 @@ export default function NewChatModal({ onClose, onChatCreated }) {
                 />
               </div>
 
-              {/* Results */}
               <div>
                 {loading && <p className="text-center text-[#A89880] text-sm py-2">Searching...</p>}
                 {!loading && search && results.length === 0 && <p className="text-center text-[#A89880] text-sm py-2">No users found</p>}
@@ -280,7 +312,6 @@ export default function NewChatModal({ onClose, onChatCreated }) {
               )}
             </div>
 
-            {/* Create button */}
             <div className="px-6 pb-6 pt-2 flex-shrink-0">
               <button
                 onClick={handleCreateGroup}
@@ -292,6 +323,30 @@ export default function NewChatModal({ onClose, onChatCreated }) {
             </div>
           </div>
         )}
+
+        {/* AI Chat */}
+        {tab === "ai" && (
+          <div className="flex flex-col flex-1 items-center justify-center px-6 pb-8 gap-6">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#C8956C] to-[#A89880] flex items-center justify-center text-4xl shadow-lg">
+              🤖
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-[#2C2825] mb-2">AI Assistant</h3>
+              <p className="text-sm text-[#A89880] leading-relaxed">
+                一個超級幽默風趣的 AI 助手！<br />
+                可以聊天、講笑話、回答問題 😄
+              </p>
+            </div>
+            <button
+              onClick={handleCreateBotChat}
+              disabled={creatingBot}
+              className="w-full bg-[#2C2825] text-white font-bold py-3 rounded-xl hover:bg-[#3D3530] transition-all disabled:opacity-50"
+            >
+              {creatingBot ? "Opening..." : "Chat with AI 🤖"}
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   );

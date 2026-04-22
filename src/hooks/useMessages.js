@@ -129,3 +129,18 @@ export async function sendSystemMessage(chatroomId, text) {
     lastMessageAt: serverTimestamp(),
   });
 }
+
+export async function sendBotMessage(chatroomId, text) {
+  await addDoc(collection(db, "chatrooms", chatroomId, "messages"), {
+    senderId: "bot",
+    type: "text",
+    text,
+    timestamp: serverTimestamp(),
+    edited: false,
+    unsent: false,
+  });
+  await updateDoc(doc(db, "chatrooms", chatroomId), {
+    lastMessage: text,
+    lastMessageAt: serverTimestamp(),
+  });
+}

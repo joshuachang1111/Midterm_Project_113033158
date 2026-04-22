@@ -1,6 +1,7 @@
 import { useRef } from "react";
 
 const DEFAULT_AVATAR = "https://res.cloudinary.com/dynzpaa0u/image/upload/v1776656443/default-avatar_vmy7o0.jpg";
+const BOT_AVATAR_EMOJI = "🤖";
 
 function formatTime(timestamp) {
   if (!timestamp) return "";
@@ -9,11 +10,11 @@ function formatTime(timestamp) {
 }
 
 export default function MessageList({
-  messages, loading, isGroup,
+  messages, loading, isGroup, isBot,
   currentUid, memberProfiles, otherUser,
   searchResults, searchIndex,
   hoveredMsgId, setHoveredMsgId,
-  uploadingImagePreview,
+  uploadingImagePreview, botTyping,
   onUnsend, onEdit, onPreviewImage,
   messageRefs, bottomRef,
 }) {
@@ -22,10 +23,20 @@ export default function MessageList({
       {loading && <p className="text-center text-[#A89880] text-sm py-8">Loading messages...</p>}
       {!loading && messages.length === 0 && (
         <div className="flex flex-col items-center justify-center h-full text-[#A89880]">
-          <p className="text-sm">No messages yet</p>
-          <p className="text-xs mt-1">
-            {isGroup ? "Start the conversation!" : `Say hi to ${otherUser?.username}!`}
-          </p>
+          {isBot ? (
+            <>
+              <div className="text-5xl mb-3">🤖</div>
+              <p className="text-sm font-medium text-[#2C2825]">Hi! I'm AI Assistant</p>
+              <p className="text-xs mt-1">說點什麼吧，我超幽默的！😄</p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm">No messages yet</p>
+              <p className="text-xs mt-1">
+                {isGroup ? "Start the conversation!" : `Say hi to ${otherUser?.username}!`}
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -41,6 +52,7 @@ export default function MessageList({
         }
 
         const isMe = msg.senderId === currentUid;
+        const isFromBot = msg.senderId === "bot";
         const prevMsg = messages[index - 1];
         const isFirstInGroup = !prevMsg || prevMsg.senderId !== msg.senderId || prevMsg.type === "system";
         const nextMsg = messages[index + 1];
@@ -57,17 +69,26 @@ export default function MessageList({
             onMouseEnter={() => setHoveredMsgId(msg.id)}
             onMouseLeave={() => setHoveredMsgId(null)}
           >
-            {!isMe && (
+            {/* 對方訊息 or Bot 訊息 */}
+            {(!isMe || isFromBot) && (
               <div className={`flex items-start gap-2 animate-slide-in-left ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
                 <div className="w-8 flex-shrink-0">
                   {isFirstInGroup ? (
-                    <img src={senderProfile?.photoURL || DEFAULT_AVATAR} alt=""
-                      className="w-8 h-8 rounded-full object-cover border border-[#E8D5B7]" />
+                    isFromBot ? (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C8956C] to-[#A89880] flex items-center justify-center text-sm border border-[#E8D5B7]">
+                        🤖
+                      </div>
+                    ) : (
+                      <img src={senderProfile?.photoURL || DEFAULT_AVATAR} alt=""
+                        className="w-8 h-8 rounded-full object-cover border border-[#E8D5B7]" />
+                    )
                   ) : null}
                 </div>
                 <div className="max-w-[60%]">
-                  {isGroup && isFirstInGroup && (
-                    <p className="text-xs text-[#A89880] mb-1 ml-1">{senderProfile?.username}</p>
+                  {(isGroup || isFromBot) && isFirstInGroup && (
+                    <p className="text-xs text-[#A89880] mb-1 ml-1">
+                      {isFromBot ? "AI Assistant" : senderProfile?.username}
+                    </p>
                   )}
                   {msg.unsent ? (
                     <p className="text-xs italic text-[#A89880] px-4 py-2.5">This message was unsent</p>
@@ -96,7 +117,8 @@ export default function MessageList({
               </div>
             )}
 
-            {isMe && (
+            {/* 自己的訊息 */}
+            {isMe && !isFromBot && (
               <div className={`flex items-end justify-end gap-2 animate-slide-in-right ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
                 {hoveredMsgId === msg.id && !msg.unsent && (
                   <div className="flex items-center gap-1 mb-1">
@@ -144,6 +166,22 @@ export default function MessageList({
           </div>
         );
       })}
+
+      {/* Bot typing indicator */}
+      {botTyping && (
+        <div className="flex items-start gap-2 mt-3 animate-slide-in-left">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C8956C] to-[#A89880] flex items-center justify-center text-sm flex-shrink-0">
+            🤖
+          </div>
+          <div className="bg-white rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-[#A89880] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-2 h-2 bg-[#A89880] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-2 h-2 bg-[#A89880] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Uploading image preview */}
       {uploadingImagePreview && (

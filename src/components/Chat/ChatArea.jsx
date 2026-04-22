@@ -4,7 +4,7 @@ import { db } from "../../firebase/config";
 import { useAuth } from "../../context/AuthContext";
 import {
   useMessages, sendMessage, sendImageMessage, sendGifMessage,
-  unsendMessage, sendSystemMessage
+  unsendMessage, sendSystemMessage, sendBotMessage
 } from "../../hooks/useMessages";
 import { markAsRead } from "../../hooks/useChats";
 import { uploadToCloudinary } from "../../utils/cloudinary";
@@ -17,6 +17,12 @@ import EditMessageModal from "./modals/EditMessageModal";
 import ImagePreviewModal from "./modals/ImagePreviewModal";
 import AddMembersModal from "./modals/AddMembersModal";
 
+const BOT_PROFILE = {
+  username: "AI Assistant",
+  photoURL: null,
+  userId: "ai_assistant",
+};
+
 export default function ChatArea({ selectedChatId, onChatLeft }) {
   const { currentUser } = useAuth();
   const { messages, loading } = useMessages(selectedChatId);
@@ -27,6 +33,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
 
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [botTyping, setBotTyping] = useState(false);
 
   const [showMenu, setShowMenu] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
@@ -65,7 +72,9 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
       setChatData(data);
       setMembers(data.members);
 
-      if (data.type === "group") {
+      if (data.type === "bot") {
+        setOtherUser(BOT_PROFILE);
+      } else if (data.type === "group") {
         const profiles = {};
         await Promise.all(data.members.map(async uid => {
           const s = await getDoc(doc(db, "users", uid));
@@ -84,7 +93,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, uploadingImagePreview]);
+  }, [messages, uploadingImagePreview, botTyping]);
 
   useEffect(() => {
     if (!selectedChatId || !currentUser?.uid) return;
@@ -107,12 +116,48 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [searchIndex, searchResults]);
 
+async function handleBotReply(userText) {
+  const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+  setBotTyping(true);
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{
+                text: `你是一個超級幽默風趣的 AI 助手，名字叫 AI Assistant。你說話很有趣，喜歡說笑話和用幽默的方式回答問題。你可以用繁體中文或英文回答，根據用戶說的語言來決定。回答要簡短有力，不要太長。\n\n用戶說：${userText}`
+              }]
+            }
+          ]
+        }),
+      }
+    );
+    const data = await res.json();
+    console.log("Gemini response:", JSON.stringify(data));
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "哎呀我腦袋當機了 🤖";
+    await sendBotMessage(selectedChatId, reply);
+  } catch (err) {
+    console.error("Gemini API error", err);
+    await sendBotMessage(selectedChatId, "抱歉，我剛才去廁所了 🚽 再說一次？");
+  }
+  setBotTyping(false);
+}
+
   async function handleSend() {
     if (!text.trim() || sending) return;
     setSending(true);
-    await sendMessage(selectedChatId, currentUser.uid, text, members);
+    const sentText = text;
+    await sendMessage(selectedChatId, currentUser.uid, sentText, members);
     setText("");
     setSending(false);
+
+    if (chatData?.type === "bot") {
+      await handleBotReply(sentText);
+    }
   }
 
   async function handleImageSelect(e) {
@@ -160,6 +205,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
   }
 
   const isGroup = chatData?.type === "group";
+  const isBot = chatData?.type === "bot";
 
   if (!selectedChatId) {
     return (
@@ -179,6 +225,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
         chatData={chatData}
         otherUser={otherUser}
         isGroup={isGroup}
+        isBot={isBot}
         members={members}
         memberProfiles={memberProfiles}
         currentUid={currentUser.uid}
@@ -231,6 +278,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
         messages={messages}
         loading={loading}
         isGroup={isGroup}
+        isBot={isBot}
         currentUid={currentUser.uid}
         memberProfiles={memberProfiles}
         otherUser={otherUser}
@@ -239,6 +287,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
         hoveredMsgId={hoveredMsgId}
         setHoveredMsgId={setHoveredMsgId}
         uploadingImagePreview={uploadingImagePreview}
+        botTyping={botTyping}
         onUnsend={handleUnsend}
         onEdit={setEditingMessage}
         onPreviewImage={setPreviewImage}
@@ -249,7 +298,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
       <ChatInput
         text={text}
         setText={setText}
-        sending={sending}
+        sending={sending || botTyping}
         onSend={handleSend}
         uploadingImage={uploadingImage}
         onImageSelect={handleImageSelect}
