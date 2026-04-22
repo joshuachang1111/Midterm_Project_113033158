@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { doc, getDoc, updateDoc, deleteDoc, arrayRemove, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase/config";
 import { useAuth } from "../../context/AuthContext";
-import { useMessages, sendMessage, sendImageMessage, sendGifMessage, unsendMessage } from "../../hooks/useMessages";
+import {
+  useMessages, sendMessage, sendImageMessage, sendGifMessage,
+  unsendMessage, sendSystemMessage
+} from "../../hooks/useMessages";
 import { markAsRead } from "../../hooks/useChats";
 import { uploadToCloudinary } from "../../utils/cloudinary";
-import { sendSystemMessage } from "../../hooks/useMessages";
 
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
@@ -45,7 +47,6 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
   const bottomRef = useRef();
   const messageRefs = useRef({});
 
-  // 載入 chatroom 資料
   useEffect(() => {
     if (!selectedChatId) return;
     messageRefs.current = {};
@@ -81,18 +82,15 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
     return unsub;
   }, [selectedChatId, currentUser.uid]);
 
-  // 自動捲到底部
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, uploadingImagePreview]);
 
-  // 標記已讀
   useEffect(() => {
     if (!selectedChatId || !currentUser?.uid) return;
     markAsRead(selectedChatId, currentUser.uid);
   }, [selectedChatId, currentUser?.uid]);
 
-  // 搜尋邏輯
   useEffect(() => {
     if (!searchQuery.trim()) { setSearchResults([]); setSearchIndex(0); return; }
     const keyword = searchQuery.toLowerCase();
@@ -109,7 +107,6 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [searchIndex, searchResults]);
 
-  // Handlers
   async function handleSend() {
     if (!text.trim() || sending) return;
     setSending(true);
@@ -195,7 +192,6 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
         onLeaveGroup={handleLeaveGroup}
       />
 
-      {/* Search bar */}
       {showSearch && (
         <div className="px-6 py-3 border-b border-[#E8E0D0] bg-white/60 flex items-center gap-3 flex-shrink-0">
           <input

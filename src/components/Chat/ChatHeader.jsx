@@ -46,8 +46,9 @@ export default function ChatHeader({
         </svg>
       </button>
 
+      {/* Group menu - stopPropagation 防止冒泡到 ChatArea 的 onClick */}
       {isGroup && (
-        <div className="relative">
+        <div className="relative" onClick={(e) => e.stopPropagation()}>
           <button onClick={() => setShowMenu(!showMenu)}
             className="w-9 h-9 rounded-xl flex items-center justify-center text-[#A89880] hover:text-[#2C2825] hover:bg-[#F5ECD7] transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"

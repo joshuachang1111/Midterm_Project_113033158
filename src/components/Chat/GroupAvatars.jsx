@@ -29,21 +29,31 @@ export default function GroupAvatars({ memberProfiles, currentUid }) {
   );
 }
 
-// 用在 ChatList（只有 members uid array，需要自己抓資料）
+// 用在 ChatList（只有 members uid array，需要自己抓資料，有快取）
 export function GroupAvatarsFromUids({ members, currentUid }) {
-  const [avatars, setAvatars] = useState([]);
+  const [avatarMap, setAvatarMap] = useState({});
 
   useEffect(() => {
     const others = members.filter(uid => uid !== currentUid).slice(0, 3);
-    Promise.all(others.map(uid =>
-      getDoc(doc(db, "users", uid)).then(snap => snap.exists() ? snap.data().photoURL : DEFAULT_AVATAR)
-    )).then(setAvatars);
+    others.forEach(uid => {
+      setAvatarMap(prev => {
+        if (prev[uid]) return prev; // 已有資料，跳過
+        getDoc(doc(db, "users", uid)).then(snap => {
+          if (snap.exists()) {
+            setAvatarMap(p => ({ ...p, [uid]: snap.data().photoURL || DEFAULT_AVATAR }));
+          }
+        });
+        return prev;
+      });
+    });
   }, [members, currentUid]);
+
+  const others = members.filter(uid => uid !== currentUid).slice(0, 3);
 
   return (
     <div className="w-11 h-11 relative flex-shrink-0">
-      {avatars.slice(0, 3).map((url, i) => (
-        <img key={i} src={url || DEFAULT_AVATAR} alt=""
+      {others.map((uid, i) => (
+        <img key={uid} src={avatarMap[uid] || DEFAULT_AVATAR} alt=""
           className="absolute w-7 h-7 rounded-full object-cover border-2 border-[#F5F0E8]"
           style={{
             top: i === 0 ? 0 : i === 1 ? "auto" : 0,

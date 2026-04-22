@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import GifPicker from "./GifPicker";
 
 export default function ChatInput({
@@ -9,6 +9,13 @@ export default function ChatInput({
 }) {
   const textareaRef = useRef();
   const imageInputRef = useRef();
+
+  // 送出後 reset textarea 高度
+  useEffect(() => {
+    if (!text && textareaRef.current) {
+      textareaRef.current.style.height = "44px";
+    }
+  }, [text]);
 
   function handleKeyDown(e) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -36,7 +43,7 @@ export default function ChatInput({
           onChange={onImageSelect} />
 
         {/* GIF button */}
-        <div className="relative flex-shrink-0">
+        <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => setShowGifPicker(!showGifPicker)}
             className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm transition-colors
