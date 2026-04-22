@@ -4,36 +4,9 @@ import { auth, db } from "../../firebase/config";
 import { useChats } from "../../hooks/useChats";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
+import { GroupAvatarsFromUids } from "../Chat/GroupAvatars";
 
 const DEFAULT_AVATAR = "https://res.cloudinary.com/dynzpaa0u/image/upload/v1776656443/default-avatar_vmy7o0.jpg";
-
-function GroupAvatars({ members, currentUid }) {
-  const [avatars, setAvatars] = useState([]);
-
-  useEffect(() => {
-    const others = members.filter(uid => uid !== currentUid).slice(0, 3);
-    Promise.all(others.map(uid =>
-      getDoc(doc(db, "users", uid)).then(snap => snap.exists() ? snap.data().photoURL : DEFAULT_AVATAR)
-    )).then(setAvatars);
-  }, [members, currentUid]);
-
-  return (
-    <div className="w-11 h-11 relative flex-shrink-0">
-      {avatars.slice(0, 3).map((url, i) => (
-        <img key={i} src={url || DEFAULT_AVATAR} alt=""
-          className="absolute w-7 h-7 rounded-full object-cover border-2 border-[#F5F0E8]"
-          style={{
-            top: i === 0 ? 0 : i === 1 ? "auto" : 0,
-            bottom: i === 1 ? 0 : "auto",
-            left: i === 0 ? 0 : "auto",
-            right: i === 1 ? 0 : i === 2 ? 0 : "auto",
-            zIndex: 3 - i,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
 
 function ChatItem({ chat, currentUid, isSelected, onClick, otherUser }) {
   if (chat.type !== "group" && !otherUser) return null;
@@ -51,7 +24,7 @@ function ChatItem({ chat, currentUid, isSelected, onClick, otherUser }) {
           <img src={chat.photoURL} alt={chat.name}
             className="w-11 h-11 rounded-full object-cover flex-shrink-0 border-2 border-[#E8D5B7]" />
         ) : (
-          <GroupAvatars members={chat.members} currentUid={currentUid} />
+          <GroupAvatarsFromUids members={chat.members} currentUid={currentUid} />
         )
       ) : (
         <img src={displayPhoto || DEFAULT_AVATAR} alt={displayName}
@@ -81,7 +54,6 @@ export default function ChatList({ onSelectChat, selectedChatId, profile }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [otherUsers, setOtherUsers] = useState({});
 
-  // 在 ChatList 層級抓所有 direct chat 的對方資料
   useEffect(() => {
     if (!chats.length) return;
     const directChats = chats.filter(c => c.type !== "group");
@@ -99,7 +71,6 @@ export default function ChatList({ onSelectChat, selectedChatId, profile }) {
   const filteredChats = chats.filter(chat => {
     if (!searchQuery.trim()) return true;
     const keyword = searchQuery.toLowerCase();
-
     if (chat.type === "group") {
       return (
         chat.name?.toLowerCase().includes(keyword) ||
