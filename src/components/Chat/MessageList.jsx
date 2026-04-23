@@ -1,7 +1,6 @@
 import { useRef } from "react";
 
 const DEFAULT_AVATAR = "https://res.cloudinary.com/dynzpaa0u/image/upload/v1776656443/default-avatar_vmy7o0.jpg";
-const BOT_AVATAR_EMOJI = "🤖";
 
 function formatTime(timestamp) {
   if (!timestamp) return "";
@@ -10,8 +9,10 @@ function formatTime(timestamp) {
 }
 
 export default function MessageList({
-  messages, loading, isGroup, isBot,
+  messages = [],
+  loading, isGroup, isBot,
   currentUid, memberProfiles, otherUser,
+  blockedUids = [],
   searchResults, searchIndex,
   hoveredMsgId, setHoveredMsgId,
   uploadingImagePreview, botTyping,
@@ -26,7 +27,7 @@ export default function MessageList({
           {isBot ? (
             <>
               <div className="text-5xl mb-3">🤖</div>
-              <p className="text-sm font-medium text-[#2C2825]">Hi! I'm AI Assistant</p>
+              <p className="text-sm font-medium text-[#2C2825]">Hi! I&apos;m AI Assistant</p>
               <p className="text-xs mt-1">說點什麼吧，我超幽默的！😄</p>
             </>
           ) : (
@@ -41,6 +42,11 @@ export default function MessageList({
       )}
 
       {messages.map((msg, index) => {
+        // 過濾被封鎖用戶的訊息
+        if (msg.type !== "system" && blockedUids.includes(msg.senderId)) {
+          return null;
+        }
+
         if (msg.type === "system") {
           return (
             <div key={msg.id} className="flex items-center gap-3 my-4">
@@ -123,14 +129,12 @@ export default function MessageList({
                 {hoveredMsgId === msg.id && !msg.unsent && (
                   <div className="flex items-center gap-1 mb-1">
                     {msg.type === "text" && (
-                      <button
-                        onClick={() => onEdit(msg)}
+                      <button onClick={() => onEdit(msg)}
                         className="text-xs bg-white text-[#2C2825] px-2 py-1 rounded-lg shadow border border-[#E8D5B7] hover:bg-[#F5ECD7] transition-colors">
                         Edit
                       </button>
                     )}
-                    <button
-                      onClick={() => onUnsend(msg.id)}
+                    <button onClick={() => onUnsend(msg.id)}
                       className="text-xs bg-white text-red-400 px-2 py-1 rounded-lg shadow border border-[#E8D5B7] hover:bg-red-50 transition-colors">
                       Unsend
                     </button>
@@ -167,7 +171,6 @@ export default function MessageList({
         );
       })}
 
-      {/* Bot typing indicator */}
       {botTyping && (
         <div className="flex items-start gap-2 mt-3 animate-slide-in-left">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C8956C] to-[#A89880] flex items-center justify-center text-sm flex-shrink-0">
@@ -183,7 +186,6 @@ export default function MessageList({
         </div>
       )}
 
-      {/* Uploading image preview */}
       {uploadingImagePreview && (
         <div className="flex items-end justify-end gap-2 mt-3">
           <div className="max-w-[60%] relative">

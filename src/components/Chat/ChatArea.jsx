@@ -8,6 +8,7 @@ import {
 } from "../../hooks/useMessages";
 import { markAsRead } from "../../hooks/useChats";
 import { uploadToCloudinary } from "../../utils/cloudinary";
+import { useBlockStatus, blockUser, unblockUser } from "../../hooks/useBlockUser";
 
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
@@ -28,6 +29,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
   const { messages, loading } = useMessages(selectedChatId);
   const [chatData, setChatData] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
+  const [otherUid, setOtherUid] = useState(null);
   const [members, setMembers] = useState([]);
   const [memberProfiles, setMemberProfiles] = useState({});
 
@@ -51,6 +53,12 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
   const [searchResults, setSearchResults] = useState([]);
   const [searchIndex, setSearchIndex] = useState(0);
 
+  const { blockedUsers, blockedByUsers } = useBlockStatus(currentUser?.uid);
+  const isBlockedByMe = otherUid ? blockedUsers.includes(otherUid) : false;
+  const isBlockedByThem = otherUid ? blockedByUsers.includes(otherUid) : false;
+  const cannotSend = isBlockedByMe || isBlockedByThem;
+  const allBlockedUids = [...blockedUsers, ...blockedByUsers];
+
   const bottomRef = useRef();
   const messageRefs = useRef({});
 
@@ -58,6 +66,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
     if (!selectedChatId) return;
     messageRefs.current = {};
     setOtherUser(null);
+    setOtherUid(null);
     setMembers([]);
     setChatData(null);
     setMemberProfiles({});
@@ -82,9 +91,10 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
         }));
         setMemberProfiles(profiles);
       } else {
-        const otherUid = data.members.find(m => m !== currentUser.uid);
-        if (!otherUid) return;
-        const s = await getDoc(doc(db, "users", otherUid));
+        const uid = data.members.find(m => m !== currentUser.uid);
+        if (!uid) return;
+        setOtherUid(uid);
+        const s = await getDoc(doc(db, "users", uid));
         if (s.exists()) setOtherUser(s.data());
       }
     });
@@ -116,45 +126,41 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [searchIndex, searchResults]);
 
-async function handleBotReply(userText) {
-  const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-  setBotTyping(true);
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
+  async function handleBotReply(userText) {
+    const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+    setBotTyping(true);
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
               parts: [{
                 text: `你是一個超級幽默風趣的 AI 助手，名字叫 AI Assistant。你說話很有趣，喜歡說笑話和用幽默的方式回答問題。你可以用繁體中文或英文回答，根據用戶說的語言來決定。回答要簡短有力，不要太長。\n\n用戶說：${userText}`
               }]
-            }
-          ]
-        }),
-      }
-    );
-    const data = await res.json();
-    console.log("Gemini response:", JSON.stringify(data));
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "哎呀我腦袋當機了 🤖";
-    await sendBotMessage(selectedChatId, reply);
-  } catch (err) {
-    console.error("Gemini API error", err);
-    await sendBotMessage(selectedChatId, "抱歉，我剛才去廁所了 🚽 再說一次？");
+            }]
+          }),
+        }
+      );
+      const data = await res.json();
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "哎呀我腦袋當機了 🤖";
+      await sendBotMessage(selectedChatId, reply);
+    } catch (err) {
+      console.error("Gemini API error", err);
+      await sendBotMessage(selectedChatId, "抱歉，我剛才去廁所了 🚽 再說一次？");
+    }
+    setBotTyping(false);
   }
-  setBotTyping(false);
-}
 
   async function handleSend() {
-    if (!text.trim() || sending) return;
+    if (!text.trim() || sending || cannotSend) return;
     setSending(true);
     const sentText = text;
     await sendMessage(selectedChatId, currentUser.uid, sentText, members);
     setText("");
     setSending(false);
-
     if (chatData?.type === "bot") {
       await handleBotReply(sentText);
     }
@@ -204,6 +210,18 @@ async function handleBotReply(userText) {
     if (onChatLeft) onChatLeft();
   }
 
+  async function handleBlockUser() {
+    if (!otherUid) return;
+    if (isBlockedByMe) {
+      if (!window.confirm("Unblock this user?")) return;
+      await unblockUser(currentUser.uid, otherUid);
+    } else {
+      if (!window.confirm("Block this user?")) return;
+      await blockUser(currentUser.uid, otherUid);
+    }
+    setShowMenu(false);
+  }
+
   const isGroup = chatData?.type === "group";
   const isBot = chatData?.type === "bot";
 
@@ -237,6 +255,9 @@ async function handleBotReply(userText) {
         onEditGroup={() => { setShowEditGroup(true); setShowMenu(false); }}
         onAddMembers={() => { setShowAddMembers(true); setShowMenu(false); }}
         onLeaveGroup={handleLeaveGroup}
+        onBlockUser={handleBlockUser}
+        isBlockedByMe={isBlockedByMe}
+        isBlockedByThem={isBlockedByThem}
       />
 
       {showSearch && (
@@ -282,6 +303,7 @@ async function handleBotReply(userText) {
         currentUid={currentUser.uid}
         memberProfiles={memberProfiles}
         otherUser={otherUser}
+        blockedUids={allBlockedUids}
         searchResults={searchResults}
         searchIndex={searchIndex}
         hoveredMsgId={hoveredMsgId}
@@ -299,6 +321,7 @@ async function handleBotReply(userText) {
         text={text}
         setText={setText}
         sending={sending || botTyping}
+        cannotSend={cannotSend}
         onSend={handleSend}
         uploadingImage={uploadingImage}
         onImageSelect={handleImageSelect}
@@ -308,35 +331,16 @@ async function handleBotReply(userText) {
       />
 
       {showAddMembers && (
-        <AddMembersModal
-          chatroomId={selectedChatId}
-          currentMembers={members}
-          onClose={() => setShowAddMembers(false)}
-        />
+        <AddMembersModal chatroomId={selectedChatId} currentMembers={members} onClose={() => setShowAddMembers(false)} />
       )}
-
       {showEditGroup && (
-        <EditGroupModal
-          chatroomId={selectedChatId}
-          currentName={chatData?.name}
-          currentPhoto={chatData?.photoURL}
-          onClose={() => setShowEditGroup(false)}
-        />
+        <EditGroupModal chatroomId={selectedChatId} currentName={chatData?.name} currentPhoto={chatData?.photoURL} onClose={() => setShowEditGroup(false)} />
       )}
-
       {editingMessage && (
-        <EditMessageModal
-          message={editingMessage}
-          chatroomId={selectedChatId}
-          onClose={() => setEditingMessage(null)}
-        />
+        <EditMessageModal message={editingMessage} chatroomId={selectedChatId} onClose={() => setEditingMessage(null)} />
       )}
-
       {previewImage && (
-        <ImagePreviewModal
-          imageURL={previewImage}
-          onClose={() => setPreviewImage(null)}
-        />
+        <ImagePreviewModal imageURL={previewImage} onClose={() => setPreviewImage(null)} />
       )}
     </div>
   );

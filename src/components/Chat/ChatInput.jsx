@@ -4,13 +4,13 @@ import GifPicker from "./GifPicker";
 export default function ChatInput({
   text, setText,
   sending, onSend,
+  cannotSend,
   uploadingImage, onImageSelect,
   showGifPicker, setShowGifPicker, onGifSelect,
 }) {
   const textareaRef = useRef();
   const imageInputRef = useRef();
 
-  // 送出後 reset textarea 高度
   useEffect(() => {
     if (!text && textareaRef.current) {
       textareaRef.current.style.height = "44px";
@@ -24,11 +24,24 @@ export default function ChatInput({
     }
   }
 
+  if (cannotSend) {
+    return (
+      <div className="px-6 py-4 border-t border-[#E8E0D0] bg-white/60 backdrop-blur-sm flex-shrink-0">
+        <div className="flex items-center justify-center gap-2 py-3 px-4 bg-red-50 rounded-2xl border border-red-100">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-red-400 flex-shrink-0">
+            <path strokeLinecap="round" strokeLinejoin="round"
+              d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+          </svg>
+          <p className="text-sm text-red-400">You can no longer send messages in this conversation.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="px-6 py-4 border-t border-[#E8E0D0] bg-white/60 backdrop-blur-sm flex-shrink-0">
       <div className="flex items-end gap-3">
-
-        {/* Image upload button */}
         <button
           onClick={() => imageInputRef.current?.click()}
           disabled={uploadingImage}
@@ -39,10 +52,8 @@ export default function ChatInput({
               d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
           </svg>
         </button>
-        <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
-          onChange={onImageSelect} />
+        <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={onImageSelect} />
 
-        {/* GIF button */}
         <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => setShowGifPicker(!showGifPicker)}
@@ -51,14 +62,10 @@ export default function ChatInput({
             GIF
           </button>
           {showGifPicker && (
-            <GifPicker
-              onSelect={onGifSelect}
-              onClose={() => setShowGifPicker(false)}
-            />
+            <GifPicker onSelect={onGifSelect} onClose={() => setShowGifPicker(false)} />
           )}
         </div>
 
-        {/* Text input */}
         <textarea
           ref={textareaRef}
           value={text}
@@ -74,7 +81,6 @@ export default function ChatInput({
           style={{ minHeight: "44px" }}
         />
 
-        {/* Send button */}
         <button onClick={onSend} disabled={!text.trim() || sending}
           className="w-11 h-11 bg-[#C8956C] rounded-2xl flex items-center justify-center text-white hover:bg-[#B8845C] transition-colors disabled:opacity-40 flex-shrink-0">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"

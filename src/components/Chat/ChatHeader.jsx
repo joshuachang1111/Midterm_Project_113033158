@@ -7,6 +7,7 @@ export default function ChatHeader({
   showSearch, setShowSearch, setSearchQuery,
   showMenu, setShowMenu,
   onEditGroup, onAddMembers, onLeaveGroup,
+  onBlockUser, isBlockedByMe, isBlockedByThem,
 }) {
   return (
     <div className="px-6 py-4 border-b border-[#E8E0D0] flex items-center gap-3 bg-white/60 backdrop-blur-sm flex-shrink-0">
@@ -58,35 +59,56 @@ export default function ChatHeader({
         </svg>
       </button>
 
-      {/* Group menu */}
-      {isGroup && (
-        <div className="relative" onClick={(e) => e.stopPropagation()}>
-          <button onClick={() => setShowMenu(!showMenu)}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-[#A89880] hover:text-[#2C2825] hover:bg-[#F5ECD7] transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-              strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-            </svg>
-          </button>
-          {showMenu && (
-            <div className="absolute right-0 top-11 bg-white rounded-2xl shadow-xl border border-[#E8D5B7] overflow-hidden z-10 w-44">
-              <button onClick={onEditGroup}
-                className="w-full px-4 py-3 text-left text-sm text-[#2C2825] hover:bg-[#F5ECD7] transition-colors">
-                Edit Group
-              </button>
-              <button onClick={onAddMembers}
-                className="w-full px-4 py-3 text-left text-sm text-[#2C2825] hover:bg-[#F5ECD7] transition-colors">
-                Add Members
-              </button>
-              <button onClick={onLeaveGroup}
-                className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-50 transition-colors">
-                Leave Group
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Menu */}
+      <div className="relative" onClick={(e) => e.stopPropagation()}>
+        <button onClick={() => setShowMenu(!showMenu)}
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-[#A89880] hover:text-[#2C2825] hover:bg-[#F5ECD7] transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round"
+              d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+          </svg>
+        </button>
+
+        {showMenu && (
+          <div className="absolute right-0 top-11 bg-white rounded-2xl shadow-xl border border-[#E8D5B7] overflow-hidden z-10 w-44">
+            {isGroup ? (
+              <>
+                <button onClick={onEditGroup}
+                  className="w-full px-4 py-3 text-left text-sm text-[#2C2825] hover:bg-[#F5ECD7] transition-colors">
+                  Edit Group
+                </button>
+                <button onClick={onAddMembers}
+                  className="w-full px-4 py-3 text-left text-sm text-[#2C2825] hover:bg-[#F5ECD7] transition-colors">
+                  Add Members
+                </button>
+                <button onClick={onLeaveGroup}
+                  className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-50 transition-colors">
+                  Leave Group
+                </button>
+              </>
+            ) : !isBot && (
+              <>
+                {/* 我封鎖了對方 → 顯示 Unblock */}
+                {isBlockedByMe && (
+                  <button onClick={onBlockUser}
+                    className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-50 transition-colors">
+                    Unblock User
+                  </button>
+                )}
+                {/* 對方封鎖了我 → 不顯示任何 block 選項 */}
+                {/* 雙方都沒封鎖 → 顯示 Block */}
+                {!isBlockedByMe && !isBlockedByThem && (
+                  <button onClick={onBlockUser}
+                    className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-50 transition-colors">
+                    Block User
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

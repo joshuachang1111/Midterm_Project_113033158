@@ -48,6 +48,7 @@ export async function sendMessage(chatroomId, senderId, text, members) {
 
   await updateDoc(doc(db, "chatrooms", chatroomId), {
     lastMessage: trimmed,
+    lastMessageSenderId: senderId,   // ← 新增
     lastMessageAt: serverTimestamp(),
     ...unreadUpdate,
   });
@@ -72,6 +73,7 @@ export async function sendImageMessage(chatroomId, senderId, imageURL, members) 
 
   await updateDoc(doc(db, "chatrooms", chatroomId), {
     lastMessage: "📷 Image",
+    lastMessageSenderId: senderId,   // ← 新增
     lastMessageAt: serverTimestamp(),
     ...unreadUpdate,
   });
@@ -96,6 +98,7 @@ export async function sendGifMessage(chatroomId, senderId, gifURL, members) {
 
   await updateDoc(doc(db, "chatrooms", chatroomId), {
     lastMessage: "🎞️ GIF",
+    lastMessageSenderId: senderId,   // ← 新增
     lastMessageAt: serverTimestamp(),
     ...unreadUpdate,
   });
@@ -126,6 +129,7 @@ export async function sendSystemMessage(chatroomId, text) {
   });
   await updateDoc(doc(db, "chatrooms", chatroomId), {
     lastMessage: text,
+    lastMessageSenderId: "system",   // ← 新增
     lastMessageAt: serverTimestamp(),
   });
 }
@@ -141,6 +145,7 @@ export async function sendBotMessage(chatroomId, text) {
   });
   await updateDoc(doc(db, "chatrooms", chatroomId), {
     lastMessage: text,
+    lastMessageSenderId: "bot",      // ← 新增
     lastMessageAt: serverTimestamp(),
   });
 }
