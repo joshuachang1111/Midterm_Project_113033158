@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
 /* Auth 卡片翻牌進場 */
 @keyframes flipIn {
   0% {
