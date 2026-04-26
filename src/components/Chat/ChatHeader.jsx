@@ -8,9 +8,19 @@ export default function ChatHeader({
   showMenu, setShowMenu,
   onEditGroup, onAddMembers, onLeaveGroup,
   onBlockUser, isBlockedByMe, isBlockedByThem,
+  onBack,
 }) {
   return (
-    <div className="relative z-20 px-6 py-4 border-b border-[#E8E0D0] flex items-center gap-3 bg-white/60 backdrop-blur-sm flex-shrink-0">
+    <div className="relative z-20 px-4 py-4 border-b border-[#E8E0D0] flex items-center gap-3 bg-white/60 backdrop-blur-sm flex-shrink-0">
+      {/* 返回按鈕：手機 only */}
+      <button
+        onClick={onBack}
+        className="md:hidden w-8 h-8 rounded-xl flex items-center justify-center text-[#A89880] hover:text-[#2C2825] hover:bg-[#F5ECD7] transition-colors flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        </svg>
+      </button>
       <div className="flex-1 flex items-center gap-3 min-w-0">
 
         {/* Avatar */}

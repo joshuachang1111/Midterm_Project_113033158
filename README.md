@@ -101,7 +101,15 @@ npm run dev
 
 ### RWD (5%)
 
-使用 Tailwind CSS 的響應式工具類別實作。主要佈局採用 `flex` + `overflow-hidden`，確保在不同尺寸裝置上所有元件皆可見。聊天室側邊欄固定寬度，主聊天區域 `flex-1` 填滿剩餘空間。
+使用 Tailwind CSS 響應式 breakpoint 實作，依螢幕寬度自動切換佈局：
+
+| 尺寸 | 寬度 | 裝置 | 佈局 |
+|------|------|------|------|
+| 手機 | `< 768px` | 手機 | 單欄切換：聊天列表與聊天室擇一顯示；ChatList 右上角 ⚙️ 含 New Chat、Edit Profile、Sign Out |
+| 平板 | `768px – 1024px` | 平板、小筆電 | 雙欄：ChatList（`w-56`）+ ChatArea；IconBar 隱藏 |
+| 桌機 | `≥ 1024px` | 桌機 | 完整三欄：IconBar + ChatList（`w-64`）+ ChatArea |
+
+手機版點選聊天室後自動切換到聊天畫面，ChatArea header 左側顯示 ← 返回按鈕可回到列表。
 
 ---
 

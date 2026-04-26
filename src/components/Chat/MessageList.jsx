@@ -81,7 +81,7 @@ export default function MessageList({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-4 space-y-1">
+    <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-1">
       {loading && <p className="text-center text-[#A89880] text-sm py-8">Loading messages...</p>}
       {!loading && messages.length === 0 && (
         <div className="flex flex-col items-center justify-center h-full text-[#A89880]">
@@ -153,7 +153,7 @@ export default function MessageList({
                     )
                   ) : null}
                 </div>
-                <div className="max-w-[60%]">
+                <div className="max-w-[75%] md:max-w-[60%]">
                   {(isGroup || isFromBot) && isFirstInGroup && (
                     <p className="text-xs text-[#A89880] mb-1 ml-1">
                       {isFromBot ? "AI Assistant" : senderProfile?.username}
@@ -239,7 +239,7 @@ export default function MessageList({
                     </button>
                   </div>
                 )}
-                <div className="max-w-[60%]">
+                <div className="max-w-[75%] md:max-w-[60%]">
                   {msg.unsent ? (
                     <p className="text-xs italic text-[#A89880] px-4 py-2.5">This message was unsent</p>
                   ) : msg.type === "image" || msg.type === "gif" ? (

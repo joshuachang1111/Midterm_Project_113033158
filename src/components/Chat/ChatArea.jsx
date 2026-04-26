@@ -24,7 +24,7 @@ const BOT_PROFILE = {
   userId: "ai_assistant",
 };
 
-export default function ChatArea({ selectedChatId, onChatLeft }) {
+export default function ChatArea({ selectedChatId, onChatLeft, onBack, className = "" }) {
   const { currentUser } = useAuth();
   const { messages, loading } = useMessages(selectedChatId);
   const { blockedUsers, blockedByUsers } = useBlockStatus(currentUser.uid);
@@ -237,7 +237,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
 
   if (!selectedChatId) {
     return (
-      <div className="flex-1 bg-[#FAF7F2] flex flex-col items-center justify-center text-[#A89880]">
+      <div className={`flex-1 min-h-0 bg-[#FAF7F2] flex flex-col items-center justify-center text-[#A89880] ${className}`}>
         <div className="text-6xl mb-4">💬</div>
         <h2 className="text-xl font-semibold text-[#2C2825] mb-2">Select a chat</h2>
         <p className="text-sm">Choose a conversation or start a new one</p>
@@ -246,7 +246,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-[#FAF7F2] min-w-0"
+    <div className={`flex-1 min-h-0 flex flex-col bg-[#FAF7F2] min-w-0 ${className}`}
       onClick={() => { setShowMenu(false); setShowGifPicker(false); }}>
 
       <ChatHeader
@@ -268,6 +268,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
         onBlockUser={handleBlockUser}
         isBlockedByMe={isBlockedByMe}
         isBlockedByThem={isBlockedByThem}
+        onBack={onBack}
       />
 
       {showSearch && (

@@ -45,15 +45,20 @@ export default function ChatPage() {
   return (
     <div className="h-screen flex overflow-hidden bg-[#FAF7F2]">
       <IconBar activePanel={activePanel} setActivePanel={handleIconClick} />
+
       <ChatList
         chats={chats}
         onSelectChat={setSelectedChatId}
         selectedChatId={selectedChatId}
         profile={profile}
+        onIconClick={handleIconClick}
+        className={selectedChatId ? "max-md:hidden" : ""}
       />
       <ChatArea
         selectedChatId={selectedChatId}
         onChatLeft={() => setSelectedChatId(null)}
+        onBack={() => setSelectedChatId(null)}
+        className={!selectedChatId ? "max-md:hidden" : ""}
       />
 
       {(forceProfile || showProfile) && (

@@ -35,7 +35,7 @@ export default function IconBar({ activePanel, setActivePanel }) {
   ];
 
   return (
-    <div className="w-16 bg-[#2C2825] flex flex-col items-center pt-5 gap-2 flex-shrink-0">
+    <div className="hidden lg:flex w-16 bg-[#2C2825] flex-col items-center pt-5 gap-2 flex-shrink-0">
       {icons.map((icon) => (
         <button
           key={icon.id}
