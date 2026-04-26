@@ -15,17 +15,18 @@
 ## 關鍵規則
 
 1. **改動前必須溝通**，等用戶說「好去做」才執行
-2. **每次改動後附 AI Reference**，格式：
+2. **每次改動後必附 AI Reference**，格式：
    ```
-   --- 互動 N ---
+   **AI Reference**
    使用者 prompt：...
    Claude 產出：
-   - 修改 src/xxx.jsx
-     （說明改了什麼、為什麼）
+   - 修改 src/xxx.jsx：說明改了什麼、為什麼
    ```
-3. **不用 Gemini**，只用 OpenAI（`VITE_OPENAI_API_KEY`，model: `gpt-4o-mini`）
-4. **不裝新套件**，除非用戶同意
-5. **直接改主資料夾的檔案**（`/Midterm_Project_113033158/src/...`），不要改 worktree 裡的
+3. **每次改動後告訴用戶怎麼測試**
+4. **全程用中文溝通**
+5. **不用 Gemini**，只用 OpenAI（`VITE_OPENAI_API_KEY`，model: `gpt-4o-mini`）
+6. **不裝新套件**，除非用戶同意
+7. **直接改主資料夾的檔案**（`/Midterm_Project_113033158/src/...`）
 
 ---
 
@@ -146,7 +147,7 @@ chatrooms/{chatroomId}/messages/{messageId}
 - [x] Email Sign Up / Sign In
 - [ ] Firebase Hosting (5%) ← **待部署**
 - [x] Firestore 讀寫（authenticated）
-- [ ] RWD (5%) ← **待實作**
+- [x] RWD (5%) ← 完成，見下方 RWD 實作細節
 - [x] Git
 - [x] Chatroom（一對一、群組、歷史訊息、邀請成員）
 
@@ -169,6 +170,24 @@ chatrooms/{chatroomId}/messages/{messageId}
 - [x] Emoji Reaction (3%) ← 每人每則訊息限一個 emoji，選同 emoji 取消，選不同替換
 - [ ] Reply to Message (6%) ← **待實作**
 - [ ] Custom Sticker (10%) ← **待實作**
+
+---
+
+## RWD 實作細節
+
+| 尺寸 | 寬度 | 佈局 |
+|------|------|------|
+| 手機 | < 768px (md) | 單欄切換：有選聊天室顯示 ChatArea，否則顯示 ChatList |
+| 平板 | 768px–1024px (md–lg) | 雙欄：ChatList(w-56) + ChatArea；IconBar 隱藏 |
+| 桌機 | ≥ 1024px (lg) | 三欄：IconBar + ChatList(w-64) + ChatArea |
+
+**關鍵 CSS 技巧：**
+- 顯示/隱藏用 `max-md:hidden`（只在手機隱藏），避免 `hidden md:flex` 的 cascade 衝突
+- ChatList / ChatArea 透過 `className` prop 接收顯示條件（不加 wrapper div）
+- 捲動要正常運作必須加 `min-h-0` 到 ChatArea 和 MessageList（flexbox 預設 `min-height: auto` 會撐破高度限制）
+- IconBar：`hidden lg:flex`
+- 手機版 ChatList header 右上角：Settings 齒輪（`lg:hidden`），含 New Chat / Edit Profile / Sign Out
+- ChatHeader 左側返回按鈕：`md:hidden`（只在手機顯示）
 
 ---
 
