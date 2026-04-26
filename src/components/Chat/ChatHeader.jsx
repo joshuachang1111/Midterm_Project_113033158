@@ -10,7 +10,7 @@ export default function ChatHeader({
   onBlockUser, isBlockedByMe, isBlockedByThem,
 }) {
   return (
-    <div className="px-6 py-4 border-b border-[#E8E0D0] flex items-center gap-3 bg-white/60 backdrop-blur-sm flex-shrink-0">
+    <div className="relative z-20 px-6 py-4 border-b border-[#E8E0D0] flex items-center gap-3 bg-white/60 backdrop-blur-sm flex-shrink-0">
       <div className="flex-1 flex items-center gap-3 min-w-0">
 
         {/* Avatar */}
@@ -39,7 +39,7 @@ export default function ChatHeader({
           </p>
           <p className="text-xs text-[#A89880]">
             {isBot
-              ? "Powered by Gemini ✨"
+              ? "Powered by OpenAI ✨"
               : isGroup
               ? `${members.length} members`
               : `@${otherUser?.userId || ""}`}
@@ -71,7 +71,7 @@ export default function ChatHeader({
         </button>
 
         {showMenu && (
-          <div className="absolute right-0 top-11 bg-white rounded-2xl shadow-xl border border-[#E8D5B7] overflow-hidden z-10 w-44">
+          <div className="absolute right-0 top-11 bg-white rounded-2xl shadow-xl border border-[#E8D5B7] overflow-hidden z-50 w-44">
             {isGroup ? (
               <>
                 <button onClick={onEditGroup}

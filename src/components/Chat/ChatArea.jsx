@@ -7,6 +7,7 @@ import {
   unsendMessage, sendSystemMessage, sendBotMessage
 } from "../../hooks/useMessages";
 import { markAsRead } from "../../hooks/useChats";
+import { useBlockStatus, blockUser, unblockUser } from "../../hooks/useBlockUser";
 import { uploadToCloudinary } from "../../utils/cloudinary";
 
 import ChatHeader from "./ChatHeader";
@@ -26,10 +27,17 @@ const BOT_PROFILE = {
 export default function ChatArea({ selectedChatId, onChatLeft }) {
   const { currentUser } = useAuth();
   const { messages, loading } = useMessages(selectedChatId);
+  const { blockedUsers, blockedByUsers } = useBlockStatus(currentUser.uid);
   const [chatData, setChatData] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
   const [members, setMembers] = useState([]);
   const [memberProfiles, setMemberProfiles] = useState({});
+
+  const otherUid = chatData?.type === "direct" ? chatData.members?.find(m => m !== currentUser.uid) : null;
+  const isBlockedByMe = !!otherUid && blockedUsers.includes(otherUid);
+  const isBlockedByThem = !!otherUid && blockedByUsers.includes(otherUid);
+  const cannotSend = !!otherUid && (isBlockedByMe || isBlockedByThem);
+  const allBlockedUids = [...blockedUsers, ...blockedByUsers];
 
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -209,6 +217,16 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
     if (onChatLeft) onChatLeft();
   }
 
+  async function handleBlockUser() {
+    if (!otherUid) return;
+    if (isBlockedByMe) {
+      await unblockUser(currentUser.uid, otherUid);
+    } else {
+      await blockUser(currentUser.uid, otherUid);
+    }
+    setShowMenu(false);
+  }
+
   const isGroup = chatData?.type === "group";
   const isBot = chatData?.type === "bot";
 
@@ -242,6 +260,9 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
         onEditGroup={() => { setShowEditGroup(true); setShowMenu(false); }}
         onAddMembers={() => { setShowAddMembers(true); setShowMenu(false); }}
         onLeaveGroup={handleLeaveGroup}
+        onBlockUser={handleBlockUser}
+        isBlockedByMe={isBlockedByMe}
+        isBlockedByThem={isBlockedByThem}
       />
 
       {showSearch && (
@@ -293,6 +314,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
         setHoveredMsgId={setHoveredMsgId}
         uploadingImagePreview={uploadingImagePreview}
         botTyping={botTyping}
+        blockedUids={allBlockedUids}
         onUnsend={handleUnsend}
         onEdit={setEditingMessage}
         onPreviewImage={setPreviewImage}
@@ -304,6 +326,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
         text={text}
         setText={setText}
         sending={sending || botTyping}
+        cannotSend={cannotSend}
         onSend={handleSend}
         uploadingImage={uploadingImage}
         onImageSelect={handleImageSelect}
