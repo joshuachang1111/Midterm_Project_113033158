@@ -155,7 +155,6 @@ export default function ChatArea({ selectedChatId, onChatLeft, onBack, className
         }),
       });
       const data = await res.json();
-      console.log("OpenAI response:", JSON.stringify(data));
       const reply = data.choices?.[0]?.message?.content || "哎呀我腦袋當機了 🤖";
       await sendBotMessage(selectedChatId, reply);
     } catch (err) {

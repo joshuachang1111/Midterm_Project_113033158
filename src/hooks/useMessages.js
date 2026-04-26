@@ -4,6 +4,7 @@ import {
   addDoc, serverTimestamp, doc, updateDoc, increment, getDoc
 } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { escapeHtml } from "../utils/escapeHtml";
 
 export function useMessages(chatroomId) {
   const [messages, setMessages] = useState([]);
@@ -32,7 +33,7 @@ export async function sendMessage(chatroomId, senderId, text, members) {
 
   await addDoc(collection(db, "chatrooms", chatroomId, "messages"), {
     senderId,
-    text: trimmed,
+    text: escapeHtml(trimmed),
     type: "text",
     timestamp: serverTimestamp(),
     edited: false,
@@ -116,7 +117,7 @@ export async function editMessage(chatroomId, messageId, newText) {
   const trimmed = newText.trim();
   if (!trimmed) return;
   await updateDoc(doc(db, "chatrooms", chatroomId, "messages", messageId), {
-    text: trimmed,
+    text: escapeHtml(trimmed),
     edited: true,
   });
 }
