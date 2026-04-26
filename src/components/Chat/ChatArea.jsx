@@ -61,6 +61,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
 
   const bottomRef = useRef();
   const messageRefs = useRef({});
+  const prevMsgCountRef = useRef(0);
 
   useEffect(() => {
     if (!selectedChatId) return;
@@ -100,7 +101,11 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
   }, [selectedChatId, currentUser.uid]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const newCount = messages.length;
+    if (newCount > prevMsgCountRef.current || uploadingImagePreview || botTyping) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    prevMsgCountRef.current = newCount;
   }, [messages, uploadingImagePreview, botTyping]);
 
   useEffect(() => {
@@ -306,6 +311,7 @@ export default function ChatArea({ selectedChatId, onChatLeft }) {
         isGroup={isGroup}
         isBot={isBot}
         currentUid={currentUser.uid}
+        chatroomId={selectedChatId}
         memberProfiles={memberProfiles}
         otherUser={otherUser}
         searchResults={searchResults}

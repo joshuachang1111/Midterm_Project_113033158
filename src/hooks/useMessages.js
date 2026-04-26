@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   collection, query, orderBy, onSnapshot,
-  addDoc, serverTimestamp, doc, updateDoc, increment
+  addDoc, serverTimestamp, doc, updateDoc, increment, getDoc
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 
@@ -132,6 +132,36 @@ export async function sendSystemMessage(chatroomId, text) {
     lastMessageSenderId: "system",   // ← 新增
     lastMessageAt: serverTimestamp(),
   });
+}
+
+export async function toggleReaction(chatroomId, messageId, emoji, uid) {
+  const msgRef = doc(db, "chatrooms", chatroomId, "messages", messageId);
+  const snap = await getDoc(msgRef);
+  if (!snap.exists()) return;
+
+  const reactions = snap.data().reactions || {};
+
+  // 找出這個 user 目前選的 emoji
+  let prevEmoji = null;
+  for (const [e, uids] of Object.entries(reactions)) {
+    if (uids.includes(uid)) { prevEmoji = e; break; }
+  }
+
+  const updated = { ...reactions };
+
+  // 從舊的 emoji 移除
+  if (prevEmoji) {
+    const filtered = updated[prevEmoji].filter(u => u !== uid);
+    if (filtered.length === 0) delete updated[prevEmoji];
+    else updated[prevEmoji] = filtered;
+  }
+
+  // 加到新的 emoji（如果跟舊的一樣就是取消，不加回去）
+  if (emoji !== prevEmoji) {
+    updated[emoji] = [...(updated[emoji] || []), uid];
+  }
+
+  await updateDoc(msgRef, { reactions: updated });
 }
 
 export async function sendBotMessage(chatroomId, text) {

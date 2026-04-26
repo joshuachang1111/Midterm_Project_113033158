@@ -1,6 +1,8 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
+import { toggleReaction } from "../../hooks/useMessages";
 
 const DEFAULT_AVATAR = "https://res.cloudinary.com/dynzpaa0u/image/upload/v1776656443/default-avatar_vmy7o0.jpg";
+const EMOJIS = ['🔥', '💀', '🫡', '🤌', '🥹', '💯'];
 
 function formatTime(timestamp) {
   if (!timestamp) return "";
@@ -8,17 +10,76 @@ function formatTime(timestamp) {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function ReactionPicker({ onSelect }) {
+  return (
+    <div
+      className="absolute bottom-full mb-1 bg-white rounded-2xl shadow-xl border border-[#E8D5B7] px-2 py-1.5 flex items-center gap-1 z-50"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {EMOJIS.map(emoji => (
+        <button
+          key={emoji}
+          onClick={() => onSelect(emoji)}
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-lg hover:bg-[#F5ECD7] transition-colors"
+        >
+          {emoji}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ReactionBar({ reactions, currentUid, onReact }) {
+  const entries = Object.entries(reactions).filter(([, uids]) => uids.length > 0);
+  if (entries.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {entries.map(([emoji, uids]) => {
+        const isMine = uids.includes(currentUid);
+        return (
+          <button
+            key={emoji}
+            onClick={() => onReact(emoji)}
+            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-colors
+              ${isMine
+                ? 'bg-[#C8956C] border-[#C8956C] text-white'
+                : 'bg-white border-[#E8D5B7] text-[#2C2825] hover:bg-[#F5ECD7]'}`}
+          >
+            <span>{emoji}</span>
+            <span>{uids.length}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function MessageList({
   messages = [],
   loading, isGroup, isBot,
   currentUid, memberProfiles, otherUser,
   blockedUids = [],
+  chatroomId,
   searchResults, searchIndex,
   hoveredMsgId, setHoveredMsgId,
   uploadingImagePreview, botTyping,
   onUnsend, onEdit, onPreviewImage,
   messageRefs, bottomRef,
 }) {
+  const [pickerMsgId, setPickerMsgId] = useState(null);
+
+  useEffect(() => {
+    if (!pickerMsgId) return;
+    function handleClick() { setPickerMsgId(null); }
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [pickerMsgId]);
+
+  async function handleReact(messageId, emoji) {
+    await toggleReaction(chatroomId, messageId, emoji, currentUid);
+    setPickerMsgId(null);
+  }
+
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4 space-y-1">
       {loading && <p className="text-center text-[#A89880] text-sm py-8">Loading messages...</p>}
@@ -42,7 +103,6 @@ export default function MessageList({
       )}
 
       {messages.map((msg, index) => {
-        // 過濾被封鎖用戶的訊息
         if (msg.type !== "system" && blockedUids.includes(msg.senderId)) {
           return null;
         }
@@ -67,6 +127,9 @@ export default function MessageList({
         const isHighlighted = searchResults[searchIndex] === msg.id;
         const isSearchMatch = searchResults.includes(msg.id);
         const mediaURL = msg.type === "gif" ? msg.gifURL : msg.imageURL;
+        const reactions = msg.reactions || {};
+        const isHovered = hoveredMsgId === msg.id;
+        const isPickerOpen = pickerMsgId === msg.id;
 
         return (
           <div
@@ -116,18 +179,54 @@ export default function MessageList({
                       {msg.edited && <span className="text-xs text-[#A89880] ml-1">(edited)</span>}
                     </div>
                   )}
+                  {!msg.unsent && Object.keys(reactions).length > 0 && (
+                    <ReactionBar
+                      reactions={reactions}
+                      currentUid={currentUid}
+                      onReact={(emoji) => handleReact(msg.id, emoji)}
+                    />
+                  )}
                   {isLastInGroup && !msg.unsent && (
                     <p className="text-xs text-[#A89880] mt-1 ml-1">{formatTime(msg.timestamp)}</p>
                   )}
                 </div>
+
+                {/* Reaction trigger（對方訊息，不含 bot） */}
+                {!msg.unsent && !isFromBot && (
+                  <div className="relative self-center ml-1">
+                    {isHovered && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPickerMsgId(isPickerOpen ? null : msg.id); }}
+                        className="w-7 h-7 rounded-xl flex items-center justify-center text-sm text-[#A89880] hover:text-[#2C2825] hover:bg-[#F5ECD7] transition-colors"
+                      >
+                        😊
+                      </button>
+                    )}
+                    {isPickerOpen && (
+                      <ReactionPicker onSelect={(emoji) => handleReact(msg.id, emoji)} />
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
             {/* 自己的訊息 */}
             {isMe && !isFromBot && (
               <div className={`flex items-end justify-end gap-2 animate-slide-in-right ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
-                {hoveredMsgId === msg.id && !msg.unsent && (
+                {isHovered && !msg.unsent && (
                   <div className="flex items-center gap-1 mb-1">
+                    {/* Reaction trigger */}
+                    <div className="relative">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPickerMsgId(isPickerOpen ? null : msg.id); }}
+                        className="w-7 h-7 rounded-xl flex items-center justify-center text-sm text-[#A89880] hover:text-[#2C2825] hover:bg-[#F5ECD7] transition-colors"
+                      >
+                        😊
+                      </button>
+                      {isPickerOpen && (
+                        <ReactionPicker onSelect={(emoji) => handleReact(msg.id, emoji)} />
+                      )}
+                    </div>
                     {msg.type === "text" && (
                       <button onClick={() => onEdit(msg)}
                         className="text-xs bg-white text-[#2C2825] px-2 py-1 rounded-lg shadow border border-[#E8D5B7] hover:bg-[#F5ECD7] transition-colors">
@@ -159,6 +258,15 @@ export default function MessageList({
                       ${isHighlighted ? "ring-4 ring-[#2C2825]" : isSearchMatch ? "ring-2 ring-[#2C2825]/40" : ""}`}>
                       <span className="whitespace-pre-wrap break-words">{msg.text}</span>
                       {msg.edited && <span className="text-xs text-white/70 ml-1">(edited)</span>}
+                    </div>
+                  )}
+                  {!msg.unsent && Object.keys(reactions).length > 0 && (
+                    <div className="flex justify-end">
+                      <ReactionBar
+                        reactions={reactions}
+                        currentUid={currentUid}
+                        onReact={(emoji) => handleReact(msg.id, emoji)}
+                      />
                     </div>
                   )}
                   {isLastInGroup && !msg.unsent && (
