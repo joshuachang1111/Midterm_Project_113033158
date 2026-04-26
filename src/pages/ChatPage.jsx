@@ -36,14 +36,14 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#FAF7F2]">
+      <div className="h-dvh flex items-center justify-center bg-[#FAF7F2]">
         <p className="text-[#A89880]">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex overflow-hidden bg-[#FAF7F2]">
+    <div className="h-dvh flex overflow-hidden bg-[#FAF7F2]">
       <IconBar activePanel={activePanel} setActivePanel={handleIconClick} />
 
       <ChatList
