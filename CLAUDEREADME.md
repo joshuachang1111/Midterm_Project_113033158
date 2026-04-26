@@ -1,0 +1,206 @@
+# CLAUDE INTERNAL REFERENCE
+> 這份文件是給 Claude 自己看的，不用提交。每次對話開始前先讀這份。
+
+---
+
+## 專案概述
+
+**CS2410 期中作業** — React + Firebase 即時聊天應用  
+**學號：** 113033158  
+**截止：** 2026/05/07 23:59  
+**技術棧：** React 19, Vite, Tailwind CSS v4, Firebase Auth + Firestore, Cloudinary, Giphy API, OpenAI gpt-4o-mini
+
+---
+
+## 關鍵規則
+
+1. **改動前必須溝通**，等用戶說「好去做」才執行
+2. **每次改動後附 AI Reference**，格式：
+   ```
+   --- 互動 N ---
+   使用者 prompt：...
+   Claude 產出：
+   - 修改 src/xxx.jsx
+     （說明改了什麼、為什麼）
+   ```
+3. **不用 Gemini**，只用 OpenAI（`VITE_OPENAI_API_KEY`，model: `gpt-4o-mini`）
+4. **不裝新套件**，除非用戶同意
+5. **直接改主資料夾的檔案**（`/Midterm_Project_113033158/src/...`），不要改 worktree 裡的
+
+---
+
+## 檔案地圖
+
+```
+src/
+├── pages/
+│   ├── AuthPage.jsx          登入/註冊頁，含 Email + Google OAuth，3D card 動畫
+│   └── ChatPage.jsx          主頁，組裝 IconBar + ChatList + ChatArea + Modals
+│
+├── components/
+│   ├── Sidebar/
+│   │   ├── IconBar.jsx       最左邊 icon 列（profile、new chat 等）
+│   │   └── ChatList.jsx      聊天列表；讀 useChats、useBlockStatus；ChatItem 子元件
+│   │
+│   ├── Chat/
+│   │   ├── ChatArea.jsx      ★ 最複雜的檔案。state 全在這：
+│   │   │                       chatData, otherUser, members, memberProfiles
+│   │   │                       text, sending, botTyping
+│   │   │                       showMenu, showAddMembers, showEditGroup
+│   │   │                       hoveredMsgId, editingMessage, previewImage
+│   │   │                       showSearch, searchQuery, searchResults, searchIndex
+│   │   │                       uploadingImage, uploadingImagePreview, showGifPicker
+│   │   │                     bot 回覆邏輯在 handleBotReply()，呼叫 OpenAI API
+│   │   │                     傳給 MessageList 的 props 很多，新功能 state 也加在這
+│   │   │
+│   │   ├── ChatHeader.jsx    Header bar，含搜尋 icon、⋯ 選單
+│   │   ├── ChatInput.jsx     輸入框；props: text, setText, onSend, cannotSend（block 時顯示警告）
+│   │   ├── MessageList.jsx   訊息列表；接收 blockedUids prop 過濾訊息（目前 ChatArea 沒傳）
+│   │   ├── GroupAvatars.jsx  群組頭像疊加效果
+│   │   ├── GifPicker.jsx     Giphy API picker，floating panel
+│   │   ├── EditGroupModal.jsx
+│   │   ├── NewChatModal.jsx  含 Direct / Group / AI Chat 三個 tab
+│   │   └── modals/
+│   │       ├── EditMessageModal.jsx
+│   │       ├── ImagePreviewModal.jsx
+│   │       └── AddMembersModal.jsx
+│   │
+│   └── Profile/
+│       └── ProfileModal.jsx  編輯 username、userId（唯一性檢查）、phone、address、頭像
+│
+├── context/
+│   └── AuthContext.jsx       Firebase Auth onAuthStateChanged，提供 currentUser
+│
+├── hooks/
+│   ├── useChats.js           useChats(uid)：監聽 chatrooms where members contains uid
+│   │                         markAsRead、findExistingChat、createChat
+│   ├── useMessages.js        useMessages(chatroomId)：監聽 messages subcollection
+│   │                         sendMessage, sendImageMessage, sendGifMessage
+│   │                         unsendMessage, editMessage
+│   │                         sendSystemMessage, sendBotMessage
+│   ├── useUserProfile.js     saveUserProfile, checkUserIdAvailable, useUserProfile hook
+│   └── useBlockUser.js       useBlockStatus(uid)：blockedUsers[], blockedByUsers[]
+│                             blockUser(myUid, targetUid), unblockUser(myUid, targetUid)
+│
+├── firebase/
+│   └── config.js             initializeApp，export auth, db
+│
+└── utils/
+    ├── cloudinary.js         uploadToCloudinary(file)：上傳圖片，回傳 URL
+    └── escapeHtml.js         escapeHtml()：XSS 防護輔助（React 本身已防，這是備用）
+```
+
+---
+
+## Firestore 資料結構
+
+```
+users/{uid}
+  username: string
+  userId: string          （唯一 @handle，存 lowercase）
+  email: string
+  phone: string
+  address: string
+  photoURL: string        （Cloudinary URL）
+  blockedUsers: string[]  （被我封鎖的 uid list）
+  blockedByUsers: string[] （封鎖我的 uid list）
+  createdAt: string
+
+chatrooms/{chatroomId}
+  type: "direct" | "group" | "bot"
+  members: string[]       （uid array）
+  name: string            （群組名稱，group 才有）
+  photoURL: string        （群組頭像，group 才有，選填）
+  lastMessage: string
+  lastMessageSenderId: string
+  lastMessageAt: timestamp
+  unreadCount: { [uid]: number }
+  createdAt: timestamp
+
+chatrooms/{chatroomId}/messages/{messageId}
+  senderId: string        （uid 或 "bot"）
+  type: "text" | "image" | "gif" | "system"
+  text: string
+  imageURL: string        （type=image 才有）
+  gifURL: string          （type=gif 才有）
+  timestamp: timestamp
+  edited: boolean
+  unsent: boolean
+  reactions: { [emoji]: string[] }   （待實作：emoji -> uid array）
+  replyTo: {             （待實作）
+    messageId: string
+    text: string
+    senderId: string
+  }
+```
+
+---
+
+## 功能完成狀態
+
+### Basic（50%）
+- [x] Email Sign Up / Sign In
+- [x] Firebase Hosting（網址：https://midterm-project-113033158.web.app）
+- [x] Firestore 讀寫（authenticated）
+- [x] RWD
+- [x] Git
+- [x] Chatroom（一對一、群組、歷史訊息、邀請成員）
+
+### Advanced（最多 45%）
+- [x] React framework (5%)
+- [x] Google Sign In (1%)
+- [ ] Chrome Notification (5%) ← **待實作**
+- [x] CSS Animation (2%)
+- [x] XSS 防護 (2%)
+- [x] User Profile (10%)
+- [x] Unsend message
+- [x] Edit message       ← 合計 Message Operations (10%)
+- [x] Search message
+- [x] Send image (含 unsend)
+
+### Bonus（最多 10%）
+- [x] Chatbot OpenAI (2%)
+- [ ] Block User UI (2%) ← 後端完成，UI 入口未串接
+- [x] Send GIF Giphy (3%)
+- [ ] Emoji Reaction (3%) ← **待實作**
+- [ ] Reply to Message (6%) ← **待實作**
+- [ ] Custom Sticker (10%) ← **待實作**
+
+---
+
+## 已知問題 / 注意事項
+
+1. **Block User 後端已完成，UI 未串**
+   - `useBlockUser.js` 的 `blockUser()`、`unblockUser()`、`useBlockStatus()` 全部寫好
+   - `MessageList.jsx` 接受 `blockedUids` prop 並過濾訊息，但 `ChatArea.jsx` 沒傳這個 prop
+   - `ChatInput.jsx` 的 `cannotSend` prop 有 UI，但 `ChatArea.jsx` 沒傳
+   - **待做：** ChatArea 引入 `useBlockStatus`，計算 `cannotSend`，傳給 MessageList 和 ChatInput
+   - **待做：** ChatHeader 的 ⋯ 選單加 Block/Unblock 選項（只在 direct chat 顯示）
+
+2. **OpenAI key 暴露在前端**
+   - `VITE_OPENAI_API_KEY` 是 client-side env var，打 build 後 key 會暴露
+   - 學生作業可接受，不需要改
+
+3. **Gemini package 已移除**
+   - `@google/generative-ai` 已從 package.json 刪除
+   - 需要跑 `npm install` 更新 node_modules
+
+---
+
+## 開發慣例
+
+- **顏色系統：** `#2C2825`（深棕主色）、`#FAF7F2`（米白背景）、`#C8956C`（橘色 accent）、`#A89880`（灰棕副色）、`#E8D5B7`（邊框/淺色）
+- **圓角：** 統一用 `rounded-2xl`（16px）或 `rounded-xl`（12px）
+- **動畫 class：** `animate-slide-in-left`、`animate-slide-in-right`、`animate-fade-in` 定義在 `src/index.css`
+- **訊息 state 中心：** 所有 ChatArea 的 state 都在 `ChatArea.jsx`，子元件只接 props，不自己管 state
+- **Modal 模式：** 所有 modal 用 `fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm`
+
+---
+
+## 下次對話開始時
+
+1. 讀這份文件
+2. 確認用戶要做什麼功能
+3. 說明方案（動到哪些檔案、大致做法）
+4. 等用戶同意
+5. 執行，附 AI Reference
