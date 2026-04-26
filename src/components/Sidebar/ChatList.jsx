@@ -1,7 +1,6 @@
 import { useAuth } from "../../context/AuthContext";
 import { signOut } from "firebase/auth";
 import { auth, db } from "../../firebase/config";
-import { useChats } from "../../hooks/useChats";
 import { useBlockStatus } from "../../hooks/useBlockUser";
 import { useEffect, useState } from "react";
 import { doc, getDoc, collection, query, orderBy, getDocs } from "firebase/firestore";
@@ -94,9 +93,8 @@ function ChatItem({ chat, currentUid, isSelected, onClick, otherUser, allBlocked
   );
 }
 
-export default function ChatList({ onSelectChat, selectedChatId, profile }) {
+export default function ChatList({ chats = [], onSelectChat, selectedChatId, profile }) {
   const { currentUser } = useAuth();
-  const { chats } = useChats(currentUser?.uid);
   const { blockedUsers, blockedByUsers } = useBlockStatus(currentUser?.uid);
   const allBlockedUids = [...blockedUsers, ...blockedByUsers];
   const [otherUsers, setOtherUsers] = useState({});

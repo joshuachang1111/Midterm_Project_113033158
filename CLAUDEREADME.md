@@ -78,9 +78,13 @@ src/
 │   │                         sendMessage, sendImageMessage, sendGifMessage
 │   │                         unsendMessage, editMessage
 │   │                         sendSystemMessage, sendBotMessage
+│   │                         toggleReaction(chatroomId, messageId, emoji, uid)
 │   ├── useUserProfile.js     saveUserProfile, checkUserIdAvailable, useUserProfile hook
-│   └── useBlockUser.js       useBlockStatus(uid)：blockedUsers[], blockedByUsers[]
-│                             blockUser(myUid, targetUid), unblockUser(myUid, targetUid)
+│   ├── useBlockUser.js       useBlockStatus(uid)：blockedUsers[], blockedByUsers[]
+│   │                         blockUser(myUid, targetUid), unblockUser(myUid, targetUid)
+│   └── useNotifications.js   useNotifications(chats, currentUid)
+│                             Web Notifications API，監聽 chats 的 lastMessageAt 變化
+│                             tab 非 visible 且收到新訊息時觸發 new Notification()
 │
 ├── firebase/
 │   └── config.js             initializeApp，export auth, db
@@ -126,7 +130,7 @@ chatrooms/{chatroomId}/messages/{messageId}
   timestamp: timestamp
   edited: boolean
   unsent: boolean
-  reactions: { [emoji]: string[] }   （待實作：emoji -> uid array）
+  reactions: { [emoji]: string[] }   （emoji -> uid array，已實作）
   replyTo: {             （待實作）
     messageId: string
     text: string
@@ -140,16 +144,16 @@ chatrooms/{chatroomId}/messages/{messageId}
 
 ### Basic（50%）
 - [x] Email Sign Up / Sign In
-- [x] Firebase Hosting（網址：https://midterm-project-113033158.web.app）
+- [ ] Firebase Hosting (5%) ← **待部署**
 - [x] Firestore 讀寫（authenticated）
-- [x] RWD
+- [ ] RWD (5%) ← **待實作**
 - [x] Git
 - [x] Chatroom（一對一、群組、歷史訊息、邀請成員）
 
 ### Advanced（最多 45%）
 - [x] React framework (5%)
 - [x] Google Sign In (1%)
-- [ ] Chrome Notification (5%) ← **待實作**
+- [x] Chrome Notification (5%) ← 程式完成，macOS 系統通知需開啟 Chrome Helper (Alerts)
 - [x] CSS Animation (2%)
 - [x] XSS 防護 (2%)
 - [x] User Profile (10%)
@@ -160,9 +164,9 @@ chatrooms/{chatroomId}/messages/{messageId}
 
 ### Bonus（最多 10%）
 - [x] Chatbot OpenAI (2%)
-- [ ] Block User UI (2%) ← 後端完成，UI 入口未串接
+- [x] Block User UI (2%)
 - [x] Send GIF Giphy (3%)
-- [ ] Emoji Reaction (3%) ← **待實作**
+- [x] Emoji Reaction (3%) ← 每人每則訊息限一個 emoji，選同 emoji 取消，選不同替換
 - [ ] Reply to Message (6%) ← **待實作**
 - [ ] Custom Sticker (10%) ← **待實作**
 
@@ -170,12 +174,10 @@ chatrooms/{chatroomId}/messages/{messageId}
 
 ## 已知問題 / 注意事項
 
-1. **Block User 後端已完成，UI 未串**
-   - `useBlockUser.js` 的 `blockUser()`、`unblockUser()`、`useBlockStatus()` 全部寫好
-   - `MessageList.jsx` 接受 `blockedUids` prop 並過濾訊息，但 `ChatArea.jsx` 沒傳這個 prop
-   - `ChatInput.jsx` 的 `cannotSend` prop 有 UI，但 `ChatArea.jsx` 沒傳
-   - **待做：** ChatArea 引入 `useBlockStatus`，計算 `cannotSend`，傳給 MessageList 和 ChatInput
-   - **待做：** ChatHeader 的 ⋯ 選單加 Block/Unblock 選項（只在 direct chat 顯示）
+1. **Chrome Notification 需確認 macOS 系統設定**
+   - 程式碼邏輯完整，tab 切走後收到訊息可觸發
+   - 需在「系統設定 → 通知 → Google Chrome Helper (Alerts)」確認允許通知已開啟
+   - 群組通知 title 格式：`發訊者 — 群組名稱`
 
 2. **OpenAI key 暴露在前端**
    - `VITE_OPENAI_API_KEY` 是 client-side env var，打 build 後 key 會暴露
@@ -183,7 +185,6 @@ chatrooms/{chatroomId}/messages/{messageId}
 
 3. **Gemini package 已移除**
    - `@google/generative-ai` 已從 package.json 刪除
-   - 需要跑 `npm install` 更新 node_modules
 
 ---
 

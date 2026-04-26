@@ -171,9 +171,10 @@ src/
 │   └── AuthContext.jsx           Firebase Auth 狀態管理
 ├── hooks/
 │   ├── useChats.js               聊天室列表、建立聊天室
-│   ├── useMessages.js            訊息監聽、發送、收回、編輯
+│   ├── useMessages.js            訊息監聽、發送、收回、編輯、Emoji Reaction
 │   ├── useUserProfile.js         使用者資料讀寫
-│   └── useBlockUser.js           封鎖/解封使用者
+│   ├── useBlockUser.js           封鎖/解封使用者
+│   └── useNotifications.js       Chrome Notification（Web Notifications API）
 ├── pages/
 │   ├── AuthPage.jsx              登入/註冊頁
 │   └── ChatPage.jsx              主聊天頁面
@@ -296,6 +297,18 @@ src/
 ---
 
 ## Bonus 功能
+
+### Emoji Reaction (3%)
+
+**位置：** 聊天室 → Hover 到任一訊息
+
+1. Hover 到任意訊息，右側（對方訊息）或左側（自己的訊息）出現 😊 按鈕
+2. 點 😊 按鈕，開啟 Reaction Picker（6 個 emoji：🔥 💀 🫡 🤌 🥹 💯）
+3. 點選 emoji，該表情顯示在訊息下方，附帶數量
+4. 每人對同一則訊息只能有一個 emoji；再選同一個 → 取消，選另一個 → 替換
+5. 自己按過的 emoji 以橘色底色標示
+
+---
 
 ### Block User (2%)
 

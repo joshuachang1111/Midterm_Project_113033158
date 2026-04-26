@@ -6,10 +6,14 @@ import ProfileModal from "../components/Profile/ProfileModal";
 import NewChatModal from "../components/Chat/NewChatModal";
 import { useAuth } from "../context/AuthContext";
 import { useUserProfile } from "../hooks/useUserProfile";
+import { useChats } from "../hooks/useChats";
+import { useNotifications } from "../hooks/useNotifications";
 
 export default function ChatPage() {
   const { currentUser } = useAuth();
   const { profile, loading, refetch } = useUserProfile(currentUser?.uid);
+  const { chats } = useChats(currentUser?.uid);
+  useNotifications(chats, currentUser?.uid);
   const [activePanel, setActivePanel] = useState("chats");
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
@@ -42,6 +46,7 @@ export default function ChatPage() {
     <div className="h-screen flex overflow-hidden bg-[#FAF7F2]">
       <IconBar activePanel={activePanel} setActivePanel={handleIconClick} />
       <ChatList
+        chats={chats}
         onSelectChat={setSelectedChatId}
         selectedChatId={selectedChatId}
         profile={profile}
