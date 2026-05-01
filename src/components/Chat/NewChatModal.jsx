@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, addDoc, serverTimestamp, query, where } from "firebase/firestore";
 import { db } from "../../firebase/config";
 import { useAuth } from "../../context/AuthContext";
 import { createChat, findExistingChat } from "../../hooks/useChats";
@@ -121,12 +121,14 @@ export default function NewChatModal({ onClose, onChatCreated }) {
   async function handleCreateBotChat() {
     setCreatingBot(true);
     try {
-      // 檢查是否已有 bot 聊天室
-      const snap = await getDocs(collection(db, "chatrooms"));
-      const existing = snap.docs.find(d => {
-        const data = d.data();
-        return data.type === "bot" && data.members?.includes(currentUser.uid);
-      });
+      // 只查自己的 bot 聊天室，不撈全部避免 permission error
+      const q = query(
+        collection(db, "chatrooms"),
+        where("type", "==", "bot"),
+        where("members", "array-contains", currentUser.uid)
+      );
+      const snap = await getDocs(q);
+      const existing = snap.docs[0];
 
       if (existing) {
         onChatCreated(existing.id);

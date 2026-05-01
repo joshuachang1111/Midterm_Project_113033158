@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { editMessage } from "../../../hooks/useMessages";
-import { unescapeHtml } from "../../../utils/escapeHtml";
 
 export default function EditMessageModal({ message, chatroomId, onClose }) {
-  const [text, setText] = useState(unescapeHtml(message.text || ""));
+  const [text, setText] = useState(message.text || "");
   const [saving, setSaving] = useState(false);
   const textareaRef = useRef();
 
